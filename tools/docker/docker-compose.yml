@@ -1,0 +1,11 @@
+services:
+  jrdm:
+    build:
+      context: ../..
+      dockerfile: tools/docker/Dockerfile
+    image: jrdm:dev
+    ports: ["3737:3737"]
+    volumes:
+      - ../../examples:/workspace/examples
+    environment:
+      JRDM_WORKSPACE: /workspace
