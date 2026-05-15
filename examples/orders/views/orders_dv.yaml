@@ -1,0 +1,11 @@
+name: orders_dv
+schema: app
+createMode: orReplace
+root:
+  table: orders
+  permissions: { insert: true, update: true, delete: true }
+  etag: check
+fields:
+  - { key: _id, source: orders.order_id }
+  - { key: orderTime, source: orders.order_datetime }
+  - { key: orderStatus, source: orders.order_status }
