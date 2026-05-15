@@ -41,3 +41,54 @@ export interface Entity {
   uniqueKeys?: string[][];
   comment?: string;
 }
+
+export type CreateMode = "create" | "orReplace" | "ifNotExists";
+export type EtagPolicy = "check" | "nocheck";
+
+export interface Permissions {
+  insert: boolean;
+  update: boolean;
+  delete: boolean;
+}
+
+export interface ScalarField {
+  key: string;
+  source: string;
+  etag?: EtagPolicy;
+  noupdate?: boolean;
+}
+
+export interface ObjectField {
+  key: string;
+  kind: "object" | "unnest";
+  table: string;
+  permissions?: Permissions;
+  etag?: EtagPolicy;
+  link?: string[];
+  fields: AnyField[];
+}
+
+export interface ArrayField {
+  key: string;
+  kind: "array";
+  table: string;
+  permissions?: Permissions;
+  etag?: EtagPolicy;
+  link?: string[];
+  fields: AnyField[];
+}
+
+export type AnyField = ScalarField | ObjectField | ArrayField;
+
+export interface DualityView {
+  name: string;
+  schema: string;
+  createMode: CreateMode;
+  replication?: "enable" | "disable";
+  root: {
+    table: string;
+    permissions: Permissions;
+    etag: EtagPolicy;
+  };
+  fields: AnyField[];
+}
