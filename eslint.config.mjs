@@ -11,6 +11,7 @@ export default tseslint.config(
       "eslint.config.mjs",
       "vitest.workspace.ts",
       "**/vitest.config.ts",
+      "**/vitest.integration.config.ts",
       "**/*.json",
       ".husky/**",
     ],
@@ -39,12 +40,16 @@ export default tseslint.config(
   },
   {
     // exec package tests use vi.fn() mocks and intentionally test non-Error throws
-    files: ["packages/exec/src/**/*.test.ts"],
+    files: ["packages/exec/src/**/*.test.ts", "packages/exec/src/**/*.integration.test.ts"],
     rules: {
       "@typescript-eslint/require-await": "off",
       "@typescript-eslint/unbound-method": "off",
       "@typescript-eslint/no-unsafe-assignment": "off",
       "@typescript-eslint/only-throw-error": "off",
+      "@typescript-eslint/no-unsafe-call": "off",
+      "@typescript-eslint/no-unsafe-member-access": "off",
+      "@typescript-eslint/no-unsafe-argument": "off",
+      "@typescript-eslint/no-unsafe-return": "off",
     },
   },
   {
