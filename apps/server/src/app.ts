@@ -1,0 +1,12 @@
+import Fastify from "fastify";
+import cors from "@fastify/cors";
+import { healthRoute } from "./routes/health";
+import { ddlPreviewRoute } from "./routes/ddl-preview";
+
+export async function buildApp() {
+  const app = Fastify({ logger: false });
+  await app.register(cors, { origin: true });
+  await app.register(healthRoute, { prefix: "/api" });
+  await app.register(ddlPreviewRoute, { prefix: "/api" });
+  return app;
+}
