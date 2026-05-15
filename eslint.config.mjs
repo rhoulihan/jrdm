@@ -9,6 +9,7 @@ export default tseslint.config(
       "**/.turbo/**",
       "**/node_modules/**",
       "eslint.config.mjs",
+      "vitest.workspace.ts",
       "**/*.json",
       ".husky/**",
     ],
