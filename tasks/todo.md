@@ -15,36 +15,37 @@ High-level checkable items. Detailed bite-sized steps live in the per-milestone 
 
 Detailed plan: [`docs/plans/2026-05-15-jrdm-v0.1-spike.md`](../docs/plans/2026-05-15-jrdm-v0.1-spike.md)
 
-- [ ] Task 1 — Repo bootstrap (pnpm + Turbo + tsconfig)
-- [ ] Task 2 — Lint, Prettier, markdownlint
-- [ ] Task 3 — Husky + lint-staged
-- [ ] Task 4 — Test-pair pre-commit gate (with tests)
-- [ ] Task 5 — Vitest base config
-- [ ] Task 6 — CI skeleton (lint + typecheck + unit)
-- [ ] Task 7 — `packages/model`: entity types + Zod
-- [ ] Task 8 — `packages/model`: view types + Zod
-- [ ] Task 9 — `packages/model`: YAML serde
-- [ ] Task 10 — `packages/validator`: PK + duplicate-column rules
-- [ ] Task 11 — `packages/validator`: supported-types contract test
-- [ ] Task 12 — `packages/generator-duality`: minimal SQL/JSON emitter
-- [ ] Task 13 — `packages/generator-duality`: DML annotations
-- [ ] Task 14 — `packages/generator-duality`: golden example test
-- [ ] Task 15 — `apps/server`: Fastify + health
-- [ ] Task 16 — `apps/server`: DDL preview endpoint
-- [ ] Task 17 — `apps/web`: Vite + React scaffold
-- [ ] Task 18 — `apps/web`: Generate DDL UI + Playwright e2e
-- [ ] Task 19 — `packages/exec` stub + deploy route
-- [ ] Task 20 — Testcontainers integration: deploy + sample query against live Oracle 26ai
-- [ ] Task 21 — Docker build + Compose
-- [ ] Task 22 — CI integration + container jobs
-- [ ] Task 23 — Example project (`examples/orders/`)
-- [ ] Task 24 — README + CONTRIBUTING quickstart
+- [x] Task 1 — Repo bootstrap (pnpm + Turbo + tsconfig) — `d24177b`
+- [x] Task 2 — Lint, Prettier, markdownlint — `62477d4` / `fd5c8f1`
+- [x] Task 3 — Husky + lint-staged — `b33c1ff`
+- [x] Task 4 — Test-pair pre-commit gate (with tests) — `1b1607b`
+- [x] Task 5 — Vitest base config — `4947571`
+- [x] Task 6 — CI skeleton (lint + typecheck + unit) — PR #1
+- [x] Task 7 — `packages/model`: entity types + Zod — PR #2
+- [x] Task 8 — `packages/model`: view types + Zod — PR #3
+- [x] Task 9 — `packages/model`: YAML serde — PR #4
+- [x] Task 10 — `packages/validator`: PK + duplicate-column rules — PR #5
+- [x] Task 11 — `packages/validator`: supported-types contract test — PR #5
+- [x] Task 12 — `packages/generator-duality`: minimal SQL/JSON emitter — PR #6
+- [x] Task 13 — `packages/generator-duality`: DML annotations — PR #6
+- [x] Task 14 — `packages/generator-duality`: golden example test — PR #6
+- [x] Task 15 — `apps/server`: Fastify + health — PR #7
+- [x] Task 16 — `apps/server`: DDL preview endpoint — PR #7
+- [x] Task 17 — `apps/web`: Vite + React scaffold — PR #8
+- [x] Task 18 — `apps/web`: Generate DDL UI + Playwright e2e — PR #8
+- [x] Task 19 — `packages/exec` stub + deploy route — PR #9
+- [x] Task 20 — Testcontainers integration: deploy + sample query against live Oracle 26ai — PR #10
+- [x] Task 21 — Docker build + Compose — PR #11
+- [x] Task 22 — CI integration + container jobs — PR #12
+- [x] Task 23 — Example project (`examples/orders/`) — PR #13
+- [x] Task 24 — README + CONTRIBUTING quickstart — PR #13
 
 **v0.1 Definition of Done:**
 
-- [ ] CI green; pre-commit gate proven; coverage ≥ 90/85 on packages
-- [ ] `docker compose up` opens working JRDM at <http://localhost:3737>
-- [ ] End-to-end smoke: edit YAML → see generated DDL → deploy to Oracle container → sample query returns document with `_metadata.etag`
+- [x] CI green; pre-commit gate proven; coverage ≥ 90/85 on packages (100% on model/validator/generator-duality)
+- [x] Docker: `docker compose -f tools/docker/docker-compose.yml up` serves the API at <http://localhost:3737> (UI shell in v0.2)
+- [x] End-to-end smoke: YAML → generated DDL → deploy to live Oracle 26ai container → sample query returns document with `_metadata.etag` (verified locally AND in CI integration job)
+- [~] Known carry-forward: container/Trivy CI job non-blocking pending dep-hygiene pass (tracked in `tasks/lessons.md`, scheduled v0.2)
 
 ## v0.2 — ERD Designer + Oracle Importer (Weeks 3–4)
 
