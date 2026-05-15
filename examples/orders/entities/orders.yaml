@@ -1,0 +1,15 @@
+name: orders
+schema: app
+columns:
+  - name: order_id
+    type: NUMBER
+    nullable: false
+  - name: order_datetime
+    type: TIMESTAMP
+    nullable: false
+  - name: order_status
+    type: VARCHAR2
+    nullable: false
+    length: 32
+primaryKey:
+  - order_id

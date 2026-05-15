@@ -1,0 +1,16 @@
+name: customers
+schema: app
+columns:
+  - name: customer_id
+    type: NUMBER
+    nullable: false
+  - name: full_name
+    type: VARCHAR2
+    nullable: false
+    length: 200
+  - name: email_address
+    type: VARCHAR2
+    nullable: true
+    length: 320
+primaryKey:
+  - customer_id
