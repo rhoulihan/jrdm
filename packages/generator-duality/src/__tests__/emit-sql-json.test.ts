@@ -1,0 +1,110 @@
+import { describe, it, expect } from "vitest";
+import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
+import { dirname, resolve } from "node:path";
+import { emitSqlJson } from "../emit-sql-json";
+import type { DualityView } from "@jrdm/model";
+
+const here = dirname(fileURLToPath(import.meta.url));
+const golden = (name: string) => readFileSync(resolve(here, "__golden__", name), "utf8").trim();
+
+const readOnly: DualityView = {
+  name: "orders_dv",
+  schema: "app",
+  createMode: "create",
+  root: {
+    table: "orders",
+    permissions: { insert: false, update: false, delete: false },
+    etag: "check",
+  },
+  fields: [
+    { key: "_id", source: "orders.order_id" },
+    { key: "orderTime", source: "orders.order_datetime" },
+  ],
+};
+
+describe("emitSqlJson — minimal read-only view", () => {
+  it("emits CREATE without OR REPLACE", () => {
+    const sql = emitSqlJson(readOnly);
+    expect(sql).toContain("CREATE JSON RELATIONAL DUALITY VIEW app.orders_dv");
+    expect(sql).not.toContain("OR REPLACE");
+  });
+
+  it("emits the _id field first", () => {
+    const sql = emitSqlJson(readOnly);
+    const idIdx = sql.indexOf("'_id'");
+    const otherIdx = sql.indexOf("'orderTime'");
+    expect(idIdx).toBeGreaterThan(-1);
+    expect(idIdx).toBeLessThan(otherIdx);
+  });
+
+  it("does not include any WITH INSERT/UPDATE/DELETE clauses for a read-only view", () => {
+    const sql = emitSqlJson(readOnly);
+    expect(sql).not.toMatch(/WITH\s+(INSERT|UPDATE|DELETE)/);
+  });
+
+  it("ends with the FROM clause referring to the root table", () => {
+    const sql = emitSqlJson(readOnly);
+    expect(sql.trim().endsWith("FROM orders o;")).toBe(true);
+  });
+});
+
+describe("emitSqlJson — DML annotations", () => {
+  it("emits WITH INSERT UPDATE DELETE on full-write root", () => {
+    const v: DualityView = {
+      ...readOnly,
+      root: { ...readOnly.root, permissions: { insert: true, update: true, delete: true } },
+    };
+    const sql = emitSqlJson(v);
+    expect(sql.trim().endsWith("FROM orders o WITH INSERT UPDATE DELETE;")).toBe(true);
+  });
+
+  it("emits WITH INSERT only when only insert is true", () => {
+    const v: DualityView = {
+      ...readOnly,
+      root: { ...readOnly.root, permissions: { insert: true, update: false, delete: false } },
+    };
+    expect(emitSqlJson(v)).toContain("WITH INSERT;");
+  });
+
+  it("emits OR REPLACE when createMode is orReplace", () => {
+    const v: DualityView = { ...readOnly, createMode: "orReplace" };
+    expect(emitSqlJson(v)).toContain("CREATE OR REPLACE JSON RELATIONAL DUALITY VIEW");
+  });
+
+  it("emits IF NOT EXISTS when createMode is ifNotExists", () => {
+    const v: DualityView = { ...readOnly, createMode: "ifNotExists" };
+    expect(emitSqlJson(v)).toContain("CREATE IF NOT EXISTS JSON RELATIONAL DUALITY VIEW");
+  });
+
+  it("uses initials alias for underscore-delimited table names", () => {
+    const v: DualityView = {
+      ...readOnly,
+      root: { ...readOnly.root, table: "order_items" },
+      fields: [{ key: "_id", source: "order_items.id" }],
+    };
+    const sql = emitSqlJson(v);
+    expect(sql).toContain("FROM order_items oi");
+  });
+});
+
+describe("emitSqlJson — golden file", () => {
+  it("matches orders_dv.sql byte-for-byte", () => {
+    const view: DualityView = {
+      name: "orders_dv",
+      schema: "app",
+      createMode: "orReplace",
+      root: {
+        table: "orders",
+        permissions: { insert: true, update: true, delete: true },
+        etag: "check",
+      },
+      fields: [
+        { key: "_id", source: "orders.order_id" },
+        { key: "orderTime", source: "orders.order_datetime" },
+        { key: "orderStatus", source: "orders.order_status" },
+      ],
+    };
+    expect(emitSqlJson(view).trim()).toBe(golden("orders_dv.sql"));
+  });
+});
