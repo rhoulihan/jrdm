@@ -11,8 +11,8 @@
     "build": "turbo run build",
     "test": "turbo run test",
     "test:int": "turbo run test:int",
-    "lint": "eslint --no-error-on-unmatched-pattern . && prettier --check . && markdownlint-cli2 \"**/*.md\" \"#node_modules/**\" \"#.git/**\"",
-    "lint:fix": "eslint --no-error-on-unmatched-pattern . --fix && prettier --write . && markdownlint-cli2 --fix \"**/*.md\" \"#node_modules/**\" \"#.git/**\"",
+    "lint": "eslint --no-error-on-unmatched-pattern . && prettier --check . && markdownlint-cli2 \"**/*.md\" \"#node_modules/**\" \"#**/node_modules/**\" \"#.git/**\"",
+    "lint:fix": "eslint --no-error-on-unmatched-pattern . --fix && prettier --write . && markdownlint-cli2 --fix \"**/*.md\" \"#node_modules/**\" \"#**/node_modules/**\" \"#.git/**\"",
     "typecheck": "turbo run typecheck",
     "dev": "turbo run dev --parallel",
     "prepare": "husky"

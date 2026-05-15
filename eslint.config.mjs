@@ -10,6 +10,7 @@ export default tseslint.config(
       "**/node_modules/**",
       "eslint.config.mjs",
       "vitest.workspace.ts",
+      "**/vitest.config.ts",
       "**/*.json",
       ".husky/**",
     ],
