@@ -38,6 +38,16 @@ export default tseslint.config(
     },
   },
   {
+    // exec package tests use vi.fn() mocks and intentionally test non-Error throws
+    files: ["packages/exec/src/**/*.test.ts"],
+    rules: {
+      "@typescript-eslint/require-await": "off",
+      "@typescript-eslint/unbound-method": "off",
+      "@typescript-eslint/no-unsafe-assignment": "off",
+      "@typescript-eslint/only-throw-error": "off",
+    },
+  },
+  {
     // apps/server uses Fastify whose complex generic return types are not fully
     // resolved by ESLint's projectService; disable the unsafe-* family there.
     files: ["apps/server/src/**/*.ts"],
