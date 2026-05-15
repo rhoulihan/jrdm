@@ -1,0 +1,12 @@
+node_modules/
+dist/
+build/
+coverage/
+.turbo/
+*.lock
+*.yaml
+*.yml
+*.mjs
+.claude/
+docs/
+tasks/

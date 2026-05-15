@@ -11,15 +11,21 @@
     "build": "turbo run build",
     "test": "turbo run test",
     "test:int": "turbo run test:int",
-    "lint": "turbo run lint",
+    "lint": "eslint --no-error-on-unmatched-pattern . && prettier --check . && markdownlint-cli2 \"**/*.md\" \"#node_modules/**\" \"#.git/**\" \"#docs/**\" \"#tasks/**\"",
+    "lint:fix": "eslint --no-error-on-unmatched-pattern . --fix && prettier --write . && markdownlint-cli2 --fix \"**/*.md\" \"#node_modules/**\" \"#.git/**\" \"#docs/**\" \"#tasks/**\"",
     "typecheck": "turbo run typecheck",
     "dev": "turbo run dev --parallel",
     "prepare": "husky"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "eslint": "^10.4.0",
+    "husky": "^9.1.0",
+    "lint-staged": "^15.2.0",
+    "markdownlint-cli2": "^0.22.1",
+    "prettier": "^3.8.3",
     "turbo": "^2.1.0",
     "typescript": "^5.5.0",
-    "husky": "^9.1.0",
-    "lint-staged": "^15.2.0"
+    "typescript-eslint": "^8.59.3"
   }
 }
