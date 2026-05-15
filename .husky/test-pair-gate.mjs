@@ -17,10 +17,13 @@ export function checkTestPairs(stagedFiles) {
 function hasTestPair(srcPath, tests) {
   const m = srcPath.match(SRC_RE);
   const stem = m[2];
+  // Derive the package root (e.g. "packages/model") to allow any __tests__/ file
+  // in the same package to cover any source file in that package.
+  const pkgRoot = srcPath.replace(/\/src\/.*$/, "");
   for (const t of tests) {
     if (t.endsWith(`/${stem}.test.ts`) || t.endsWith(`/${stem}.test.tsx`)) return true;
     if (t.endsWith(`/${stem}.spec.ts`) || t.endsWith(`/${stem}.spec.tsx`)) return true;
-    if (t.includes("/__tests__/") && t.includes(stem.split("/").pop())) return true;
+    if (t.includes("/__tests__/") && t.startsWith(pkgRoot)) return true;
   }
   return false;
 }
