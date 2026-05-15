@@ -9,16 +9,13 @@ export default tseslint.config(
       "**/.turbo/**",
       "**/node_modules/**",
       "eslint.config.mjs",
-      ".prettierrc.json",
-      ".markdownlint.json",
-      "pnpm-lock.yaml",
       "**/*.json",
     ],
   },
   js.configs.recommended,
   ...tseslint.configs.recommendedTypeChecked,
   {
-    files: ["**/*.ts", "**/*.tsx", "**/*.js"],
+    files: ["**/*.{ts,tsx,js,mjs}"],
     languageOptions: {
       parserOptions: {
         projectService: true,
@@ -36,5 +33,5 @@ export default tseslint.config(
     rules: {
       "@typescript-eslint/no-explicit-any": "off",
     },
-  }
+  },
 );

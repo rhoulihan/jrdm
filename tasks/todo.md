@@ -41,6 +41,7 @@ Detailed plan: [`docs/plans/2026-05-15-jrdm-v0.1-spike.md`](../docs/plans/2026-0
 - [ ] Task 24 — README + CONTRIBUTING quickstart
 
 **v0.1 Definition of Done:**
+
 - [ ] CI green; pre-commit gate proven; coverage ≥ 90/85 on packages
 - [ ] `docker compose up` opens working JRDM at <http://localhost:3737>
 - [ ] End-to-end smoke: edit YAML → see generated DDL → deploy to Oracle container → sample query returns document with `_metadata.etag`

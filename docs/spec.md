@@ -11,11 +11,12 @@ Status: Spec for development team demo
 
 JRDM is a visual, point-and-click design tool that lets developers build Oracle JSON Relational Duality Views without writing SQL. Users drag tables from an entity-relationship diagram and fields from document templates onto a duality view canvas; JRDM produces deployable DDL (both GraphQL and SQL/JSON forms), JSON Collection Table definitions, Liquibase/Flyway migrations, and ORDS REST endpoints with OpenAPI specs.
 
-It plays the same role for Oracle 26ai duality views that SQL Server Management Studio's Visual Database Tools play for relational queries: it lowers the barrier to entry for developers who think in documents, and it makes the *converged* nature of the unified model obvious by making the relational ↔ JSON mapping visible and tactile.
+It plays the same role for Oracle 26ai duality views that SQL Server Management Studio's Visual Database Tools play for relational queries: it lowers the barrier to entry for developers who think in documents, and it makes the _converged_ nature of the unified model obvious by making the relational ↔ JSON mapping visible and tactile.
 
 JRDM ships as a Node.js + React web service. The same artifact runs locally (single-binary launcher, no auth) or as a Docker Compose deployment on a shared host. Project state is stored as git-friendly YAML/JSON on the filesystem so models are diffable, branchable, and reviewable like code.
 
 The v1 demo deliverable proves three things to the development team:
+
 1. A developer with **no SQL background** can produce a working duality view from an existing schema in under five minutes.
 2. JRDM can **point at a live MongoDB collection**, infer an ERD, and propose a candidate duality view shape — making the migration story tactile.
 3. The generated DDL **deploys cleanly to a live Oracle 26ai instance** and supports the full optimistic-locking round trip with ETag.
@@ -37,18 +38,18 @@ The v1 demo deliverable proves three things to the development team:
 2. **Round-trip fidelity.** Generated DDL → live deploy → drift detect → re-import is a closed loop. Hand-edits made in the database can be pulled back into the model.
 3. **Source-of-truth in git.** Projects are folders of YAML, designed to live in version control next to the application repo. Code review on a duality view is just `git diff`.
 4. **Oracle-native polish.** Redwood-inspired theme, Oracle Sans typography, motion and detail at the bar of an Oracle product. This is a demo asset and a recruiting asset for the platform.
-5. **Convergence-forward.** JRDM speaks Oracle 26ai *and* MongoDB on equal footing. Importing a Mongo collection is a first-class action, not an afterthought.
+5. **Convergence-forward.** JRDM speaks Oracle 26ai _and_ MongoDB on equal footing. Importing a Mongo collection is a first-class action, not an afterthought.
 
 ---
 
 ## 3. User Personas
 
-| Persona | Background | Primary Need |
-|---|---|---|
-| **Doc Developer Dana** | Node/Python full-stack, last wrote SQL in school, comfortable with Mongoose/MongoDB | Generate duality views from existing relational schema so her app can `find()`/`update()` documents without ORM |
-| **Migration Engineer Mike** | Moving a Mongo workload to Oracle 26ai | Point JRDM at his Mongo cluster, get an ERD + a starter duality view that replicates today's document shape |
-| **DBA Diana** | Oracle DBA, owns the schema, gatekeeper for any DDL that touches prod | Review JRDM's generated DDL/migrations as a PR; sign off on permissions, ETag scope, and check constraints before merge |
-| **Architect Aamir** | Designing a new system, wants to model document and relational together | Use JRDM as a whiteboard that produces deployable artifacts — design *is* the deliverable |
+| Persona                     | Background                                                                          | Primary Need                                                                                                            |
+| --------------------------- | ----------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| **Doc Developer Dana**      | Node/Python full-stack, last wrote SQL in school, comfortable with Mongoose/MongoDB | Generate duality views from existing relational schema so her app can `find()`/`update()` documents without ORM         |
+| **Migration Engineer Mike** | Moving a Mongo workload to Oracle 26ai                                              | Point JRDM at his Mongo cluster, get an ERD + a starter duality view that replicates today's document shape             |
+| **DBA Diana**               | Oracle DBA, owns the schema, gatekeeper for any DDL that touches prod               | Review JRDM's generated DDL/migrations as a PR; sign off on permissions, ETag scope, and check constraints before merge |
+| **Architect Aamir**         | Designing a new system, wants to model document and relational together             | Use JRDM as a whiteboard that produces deployable artifacts — design _is_ the deliverable                               |
 
 ### Primary Use Cases
 
@@ -63,7 +64,7 @@ The v1 demo deliverable proves three things to the development team:
 
 JRDM borrows its mental model from SSMS Visual Database Tools. Three synchronized panes plus a navigator, with bidirectional editing:
 
-```
+```text
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │  Navigator    │  Diagram pane          │ Document template pane │ Inspector │
 │  ─────────    │  ─────────────         │ ─────────────────────  │ ────────  │
@@ -120,15 +121,15 @@ The document pane is a structured JSON template editor — not a free-text edito
 
 ### Node Types
 
-| Node | UI affordance | Generated mapping |
-|---|---|---|
-| Object root | Top-level `{ }` with `_id` slot | The root table of the duality view |
-| Scalar field | Named slot, type badge, source column drop zone | `'fieldName' : column` |
-| Nested object | Named `{ }` block, source table drop zone | Subquery returning a JSON object |
-| Array of objects | Named `[ ]` block, source table drop zone, FK link picker | Subquery with `JSON_ARRAYAGG` |
-| Unnested object | `{ }` block tagged `unnest`, source table drop zone | `UNNEST (subquery)` flattening 1:1 |
-| Computed field | Named slot with expression input | `@generated(path: "...")` |
-| Composite `_id` | Multi-column `_id` slot | `'_id' : {col1, col2, col3}` |
+| Node             | UI affordance                                             | Generated mapping                  |
+| ---------------- | --------------------------------------------------------- | ---------------------------------- |
+| Object root      | Top-level `{ }` with `_id` slot                           | The root table of the duality view |
+| Scalar field     | Named slot, type badge, source column drop zone           | `'fieldName' : column`             |
+| Nested object    | Named `{ }` block, source table drop zone                 | Subquery returning a JSON object   |
+| Array of objects | Named `[ ]` block, source table drop zone, FK link picker | Subquery with `JSON_ARRAYAGG`      |
+| Unnested object  | `{ }` block tagged `unnest`, source table drop zone       | `UNNEST (subquery)` flattening 1:1 |
+| Computed field   | Named slot with expression input                          | `@generated(path: "...")`          |
+| Composite `_id`  | Multi-column `_id` slot                                   | `'_id' : {col1, col2, col3}`       |
 
 ### Inspector Options per Field
 
@@ -163,31 +164,31 @@ This is the surface that must be 100% feature-complete for v1. Every annotation 
 
 ### 7.1 Table-Level Annotations
 
-| UI control | Generated SQL | Generated GraphQL | Default |
-|---|---|---|---|
-| Insert allowed | `WITH INSERT` | `@insert` | off (read-only) |
-| Update allowed | `WITH UPDATE` | `@update` | off |
-| Delete allowed | `WITH DELETE` | `@delete` | off |
-| ETag check | `WITH CHECK` (implicit) | (implicit) | on |
-| ETag exclude | `WITH NOCHECK` | `@nocheck` | — |
+| UI control     | Generated SQL           | Generated GraphQL | Default         |
+| -------------- | ----------------------- | ----------------- | --------------- |
+| Insert allowed | `WITH INSERT`           | `@insert`         | off (read-only) |
+| Update allowed | `WITH UPDATE`           | `@update`         | off             |
+| Delete allowed | `WITH DELETE`           | `@delete`         | off             |
+| ETag check     | `WITH CHECK` (implicit) | (implicit)        | on              |
+| ETag exclude   | `WITH NOCHECK`          | `@nocheck`        | —               |
 
 ### 7.2 Column-Level Annotations
 
-| UI control | Generated SQL | Default |
-|---|---|---|
-| Column updatable | `WITH UPDATE` | inherits table |
-| Column read-only | `WITH NOUPDATE` | — |
-| Column in ETag | `WITH CHECK ETAG` | on |
-| Column out of ETag | `WITH NOCHECK ETAG` | — |
+| UI control         | Generated SQL       | Default        |
+| ------------------ | ------------------- | -------------- |
+| Column updatable   | `WITH UPDATE`       | inherits table |
+| Column read-only   | `WITH NOUPDATE`     | —              |
+| Column in ETag     | `WITH CHECK ETAG`   | on             |
+| Column out of ETag | `WITH NOCHECK ETAG` | —              |
 
 ### 7.3 Relationship Mapping
 
-| Cardinality | UI gesture | Generated form |
-|---|---|---|
-| 1:1, 1:N (nested) | Drag related table onto array slot `[ ]` | `JSON_ARRAYAGG` subquery / `[ ]` in GraphQL |
-| 1:1 (flattened) | Drag related table onto a "flatten" slot | `UNNEST (subquery)` / `@unnest` |
-| N:M | Drag a junction table; JRDM auto-builds nested-via-junction shape | Nested array through junction with secondary nested object |
-| Composite FK | FK picker exposes multi-column choice | `@link(to: ["c1","c2"])` |
+| Cardinality       | UI gesture                                                        | Generated form                                             |
+| ----------------- | ----------------------------------------------------------------- | ---------------------------------------------------------- |
+| 1:1, 1:N (nested) | Drag related table onto array slot `[ ]`                          | `JSON_ARRAYAGG` subquery / `[ ]` in GraphQL                |
+| 1:1 (flattened)   | Drag related table onto a "flatten" slot                          | `UNNEST (subquery)` / `@unnest`                            |
+| N:M               | Drag a junction table; JRDM auto-builds nested-via-junction shape | Nested array through junction with secondary nested object |
+| Composite FK      | FK picker exposes multi-column choice                             | `@link(to: ["c1","c2"])`                                   |
 
 ### 7.4 ETag / Metadata Behavior
 
@@ -285,6 +286,7 @@ A single generator core drives all outputs from the canonical project model.
 Every view can be emitted in either form; the UI toggle changes only the preview. The default for new views is GraphQL (modern, more compact); SQL/JSON is the fallback for users on older clients or in contexts where the GraphQL parser is restricted.
 
 **GraphQL form (preferred):**
+
 ```sql
 CREATE OR REPLACE JSON RELATIONAL DUALITY VIEW orders_dv AS
 orders @insert @update @delete {
@@ -309,6 +311,7 @@ orders @insert @update @delete {
 ```
 
 **SQL/JSON form (equivalent, emitted on toggle):**
+
 ```sql
 CREATE OR REPLACE JSON RELATIONAL DUALITY VIEW orders_dv AS
 SELECT JSON {
@@ -376,7 +379,7 @@ When a connection has ORDS enabled, JRDM emits:
 
 ### 9.5 Generator Architecture
 
-```
+```text
 project model (YAML / in-memory tree)
         │
         ▼
@@ -414,23 +417,23 @@ The Live Preview feature is **opt-in per connection**. The DBA persona will keep
 
 ### 11.1 Stack
 
-| Layer | Choice | Why |
-|---|---|---|
-| Backend runtime | Node.js 22 LTS | Best `node-oracledb` and `mongodb` driver story; single language across tiers |
-| Web framework | Fastify | Faster than Express, native schema validation, good Pino logging |
-| Frontend | React 18 + TypeScript | Required by the canvas component ecosystem |
-| Diagramming | React Flow (xyflow) | Mature, performant, custom node/edge support |
-| Code editor | Monaco | Same editor as VS Code; Oracle SQL grammar; GraphQL grammar |
-| State (frontend) | Zustand + Immer | Lighter than Redux, fits canvas-heavy state shape |
-| Styling | Tailwind + Redwood-derived token layer | Fast iteration with brand-correct output |
-| Driver (Oracle) | `node-oracledb` (thin by default, thick when wallet/ACL needed) | Official Oracle driver |
-| Driver (Mongo) | `mongodb` Node driver | Official MongoDB driver |
-| Server tests | Vitest + Testcontainers (Oracle XE, MongoDB) | Real DBs, no mocks |
-| UI tests | Playwright | Headless browser, video on failure |
+| Layer            | Choice                                                          | Why                                                                           |
+| ---------------- | --------------------------------------------------------------- | ----------------------------------------------------------------------------- |
+| Backend runtime  | Node.js 22 LTS                                                  | Best `node-oracledb` and `mongodb` driver story; single language across tiers |
+| Web framework    | Fastify                                                         | Faster than Express, native schema validation, good Pino logging              |
+| Frontend         | React 18 + TypeScript                                           | Required by the canvas component ecosystem                                    |
+| Diagramming      | React Flow (xyflow)                                             | Mature, performant, custom node/edge support                                  |
+| Code editor      | Monaco                                                          | Same editor as VS Code; Oracle SQL grammar; GraphQL grammar                   |
+| State (frontend) | Zustand + Immer                                                 | Lighter than Redux, fits canvas-heavy state shape                             |
+| Styling          | Tailwind + Redwood-derived token layer                          | Fast iteration with brand-correct output                                      |
+| Driver (Oracle)  | `node-oracledb` (thin by default, thick when wallet/ACL needed) | Official Oracle driver                                                        |
+| Driver (Mongo)   | `mongodb` Node driver                                           | Official MongoDB driver                                                       |
+| Server tests     | Vitest + Testcontainers (Oracle XE, MongoDB)                    | Real DBs, no mocks                                                            |
+| UI tests         | Playwright                                                      | Headless browser, video on failure                                            |
 
 ### 11.2 Module Layout (proposed)
 
-```
+```text
 jrdm/
 ├── apps/
 │   ├── web/                React SPA (UI)
@@ -457,7 +460,7 @@ Monorepo managed with pnpm workspaces + Turborepo (caches builds and test runs).
 
 ### 11.3 Data Flow
 
-```
+```text
        UI (React)
           │  HTTP/WS
           ▼
@@ -482,7 +485,7 @@ Monorepo managed with pnpm workspaces + Turborepo (caches builds and test runs).
 
 A JRDM project is a directory:
 
-```
+```text
 my-project/
 ├── jrdm.yaml              # project metadata, version, settings
 ├── connections/
@@ -546,7 +549,7 @@ Per the v1 decision, JRDM listens on `127.0.0.1` by default with no authenticati
 
 ### 13.1 Docker Compose
 
-```
+```yaml
 services:
   jrdm:
     image: oracle/jrdm:latest
@@ -572,7 +575,7 @@ Configuration is layered: CLI flags > env vars > `~/.jrdm/config.yaml` > default
 
 - Oracle wallets are stored under `~/.jrdm/wallets/<connection-id>/` with 0700 permissions.
 - Database passwords are never persisted in YAML; they live in the OS keychain via `keytar` (or env vars for headless server deploys).
-- Connection YAML files contain *references* to credentials, not values, so projects can be committed safely.
+- Connection YAML files contain _references_ to credentials, not values, so projects can be committed safely.
 
 ---
 
@@ -609,28 +612,28 @@ PR previews: every PR builds and deploys a preview container to a shared dev ins
 
 ### 14.4 Quality Gates
 
-| Gate | Threshold |
-|---|---|
-| Test coverage | 90/85 on libraries |
-| Bundle size | UI ≤ 1.2 MB gzip first paint |
-| Performance | DDL regenerate on edit ≤ 50ms p99 for projects up to 200 entities |
-| Security | Trivy: no critical, no high CVEs |
-| Accessibility | axe-core: 0 violations on main flows |
+| Gate          | Threshold                                                         |
+| ------------- | ----------------------------------------------------------------- |
+| Test coverage | 90/85 on libraries                                                |
+| Bundle size   | UI ≤ 1.2 MB gzip first paint                                      |
+| Performance   | DDL regenerate on edit ≤ 50ms p99 for projects up to 200 entities |
+| Security      | Trivy: no critical, no high CVEs                                  |
+| Accessibility | axe-core: 0 violations on main flows                              |
 
 ---
 
 ## 15. Roadmap & Milestones
 
-| Milestone | Target | Scope |
-|---|---|---|
-| **v0.1 — Spike** | Week 2 | Empty-project bootstrap, hand-built ERD, SQL/JSON emitter for a single trivial view, file-based persistence |
-| **v0.2 — ERD Designer** | Week 4 | Full ERD with relationships, types, constraints; import from Oracle live connection |
-| **v0.3 — Document Editor + GraphQL emitter** | Week 6 | Document tree editor, drag-drop binding, GraphQL emitter, inspector parity for table+column annotations |
-| **v0.4 — Live Preview** | Week 8 | Deploy to live Oracle, sample query, ETag round-trip demo |
-| **v0.5 — Mongo Inference** | Week 10 | $jsonSchema + sample-based inference, suggested duality view from Mongo source |
-| **v0.6 — Migrations + ORDS + Polish** | Week 12 | Liquibase/Flyway emit, ORDS+OpenAPI emit, Redwood-faithful theming pass |
-| **v1.0 — Demo-ready** | Week 13 | Demo script rehearsed end-to-end; documentation site; release binaries |
-| **v1.1** | Post-demo | Schema diff & migrate from drifted Oracle, multi-user mode with OIDC, collaborative editing with presence/locks |
+| Milestone                                    | Target    | Scope                                                                                                           |
+| -------------------------------------------- | --------- | --------------------------------------------------------------------------------------------------------------- |
+| **v0.1 — Spike**                             | Week 2    | Empty-project bootstrap, hand-built ERD, SQL/JSON emitter for a single trivial view, file-based persistence     |
+| **v0.2 — ERD Designer**                      | Week 4    | Full ERD with relationships, types, constraints; import from Oracle live connection                             |
+| **v0.3 — Document Editor + GraphQL emitter** | Week 6    | Document tree editor, drag-drop binding, GraphQL emitter, inspector parity for table+column annotations         |
+| **v0.4 — Live Preview**                      | Week 8    | Deploy to live Oracle, sample query, ETag round-trip demo                                                       |
+| **v0.5 — Mongo Inference**                   | Week 10   | $jsonSchema + sample-based inference, suggested duality view from Mongo source                                  |
+| **v0.6 — Migrations + ORDS + Polish**        | Week 12   | Liquibase/Flyway emit, ORDS+OpenAPI emit, Redwood-faithful theming pass                                         |
+| **v1.0 — Demo-ready**                        | Week 13   | Demo script rehearsed end-to-end; documentation site; release binaries                                          |
+| **v1.1**                                     | Post-demo | Schema diff & migrate from drifted Oracle, multi-user mode with OIDC, collaborative editing with presence/locks |
 
 ### Demo Script (v1.0)
 
@@ -646,15 +649,15 @@ Total: ~7 minutes for a single demo run.
 
 ## 16. Risks & Mitigations
 
-| Risk | Impact | Mitigation |
-|---|---|---|
-| Oracle 26ai duality view syntax changes between minor releases | Generated DDL becomes stale | Pin to documented syntax version per project; integration tests run against the targeted DB version |
-| Mongo inference is wrong on edge cases (polymorphic collections) | Demo lands poorly on real-world data | Treat inference as *suggestion*; always allow override; provide a "rejected fields" view; test on a curated corpus of public Mongo datasets |
-| Canvas performance degrades on large schemas (1000+ tables) | Tool feels slow on enterprise schemas | Virtualize the diagram; lazy-load entity columns; benchmark in CI |
-| Single-user, no-auth posture limits team adoption | Tool can't be used as a shared service in v1 | Documented externalized-auth pattern (reverse proxy + OIDC); v1.1 ships internal auth |
-| ORDS auto-publish surfaces unintended endpoints | Security incident risk | Disable by default; require explicit per-view opt-in; surface a clear summary of what will be published before deploy |
-| node-oracledb thick mode required for some features increases container size and platform support burden | Deploy friction | Default to thin; document precisely which features (e.g., wallet auth) require thick |
-| Demo instance gets polluted by repeated deploys | Demo fails on the day | Per-project sandbox schemas + one-button teardown + nightly cleanup cron |
+| Risk                                                                                                     | Impact                                       | Mitigation                                                                                                                                  |
+| -------------------------------------------------------------------------------------------------------- | -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| Oracle 26ai duality view syntax changes between minor releases                                           | Generated DDL becomes stale                  | Pin to documented syntax version per project; integration tests run against the targeted DB version                                         |
+| Mongo inference is wrong on edge cases (polymorphic collections)                                         | Demo lands poorly on real-world data         | Treat inference as _suggestion_; always allow override; provide a "rejected fields" view; test on a curated corpus of public Mongo datasets |
+| Canvas performance degrades on large schemas (1000+ tables)                                              | Tool feels slow on enterprise schemas        | Virtualize the diagram; lazy-load entity columns; benchmark in CI                                                                           |
+| Single-user, no-auth posture limits team adoption                                                        | Tool can't be used as a shared service in v1 | Documented externalized-auth pattern (reverse proxy + OIDC); v1.1 ships internal auth                                                       |
+| ORDS auto-publish surfaces unintended endpoints                                                          | Security incident risk                       | Disable by default; require explicit per-view opt-in; surface a clear summary of what will be published before deploy                       |
+| node-oracledb thick mode required for some features increases container size and platform support burden | Deploy friction                              | Default to thin; document precisely which features (e.g., wallet auth) require thick                                                        |
+| Demo instance gets polluted by repeated deploys                                                          | Demo fails on the day                        | Per-project sandbox schemas + one-button teardown + nightly cleanup cron                                                                    |
 
 ---
 
@@ -674,20 +677,20 @@ These don't block the spec but warrant a decision before sprint 1:
 
 ### Appendix A — Complete Duality View Annotation Reference
 
-| SQL form | GraphQL form | Level | Effect |
-|---|---|---|---|
-| `WITH INSERT` | `@insert` | Table | Allow inserts |
-| `WITH UPDATE` | `@update` | Table or column | Allow updates |
-| `WITH DELETE` | `@delete` | Table | Allow deletes |
-| `WITH CHECK` (implicit default) | (implicit) | Table or column | Include in ETag |
-| `WITH NOCHECK` | `@nocheck` | Table or column | Exclude from ETag |
-| `WITH NOINSERT/NOUPDATE/NODELETE` (default) | (implicit) | Table | Read-only |
-| `WITH NOUPDATE` | (column-level) | Column | Pin column read-only |
-| `UNNEST (...)` | `@unnest` | Subobject | Flatten 1:1 into parent |
-| (FK in WHERE) | `@link(to: ["col"])` | Relationship | Override join columns |
-| (computed via JSON) | `@generated(path: "...")` | Field | Computed read-only field |
-| `ENABLE/DISABLE LOGICAL REPLICATION` | — | View | Replication participation |
-| `OR REPLACE` / `IF NOT EXISTS` | — | View | Create-time modifier |
+| SQL form                                    | GraphQL form              | Level           | Effect                    |
+| ------------------------------------------- | ------------------------- | --------------- | ------------------------- |
+| `WITH INSERT`                               | `@insert`                 | Table           | Allow inserts             |
+| `WITH UPDATE`                               | `@update`                 | Table or column | Allow updates             |
+| `WITH DELETE`                               | `@delete`                 | Table           | Allow deletes             |
+| `WITH CHECK` (implicit default)             | (implicit)                | Table or column | Include in ETag           |
+| `WITH NOCHECK`                              | `@nocheck`                | Table or column | Exclude from ETag         |
+| `WITH NOINSERT/NOUPDATE/NODELETE` (default) | (implicit)                | Table           | Read-only                 |
+| `WITH NOUPDATE`                             | (column-level)            | Column          | Pin column read-only      |
+| `UNNEST (...)`                              | `@unnest`                 | Subobject       | Flatten 1:1 into parent   |
+| (FK in WHERE)                               | `@link(to: ["col"])`      | Relationship    | Override join columns     |
+| (computed via JSON)                         | `@generated(path: "...")` | Field           | Computed read-only field  |
+| `ENABLE/DISABLE LOGICAL REPLICATION`        | —                         | View            | Replication participation |
+| `OR REPLACE` / `IF NOT EXISTS`              | —                         | View            | Create-time modifier      |
 
 ### Appendix B — Supported Column Types
 
@@ -698,7 +701,7 @@ These don't block the spec but warrant a decision before sprint 1:
 ```yaml
 name: orders_dv
 schema: app
-syntax: graphql            # generator preference; both forms always available
+syntax: graphql # generator preference; both forms always available
 createMode: orReplace
 replication: disable
 root:
