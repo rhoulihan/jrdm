@@ -1,3 +1,4 @@
+// covers: apps/server/src/app.ts (imports and invokes buildApp)
 import { describe, it, expect } from "vitest";
 import { buildApp } from "../app";
 

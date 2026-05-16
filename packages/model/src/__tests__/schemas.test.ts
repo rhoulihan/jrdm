@@ -1,3 +1,4 @@
+// covers: packages/model/src/types.ts (via ColumnSchema which uses SUPPORTED_TYPES)
 import { describe, it, expect } from "vitest";
 import { ColumnSchema, EntitySchema, type Entity } from "../schemas";
 

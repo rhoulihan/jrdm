@@ -1,3 +1,4 @@
+// covers: apps/web/src/App.tsx (smoke-tests the rendered React app)
 import { test, expect } from "@playwright/test";
 
 test("home page loads and shows server status", async ({ page }) => {

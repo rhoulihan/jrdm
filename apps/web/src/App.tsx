@@ -1,3 +1,4 @@
+// @tested-by: apps/web/src/__tests__/smoke.spec.ts
 import { useEffect, useState } from "react";
 
 const SAMPLE_VIEW = {
