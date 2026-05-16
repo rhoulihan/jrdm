@@ -72,9 +72,22 @@ describe("emitSqlJson — DML annotations", () => {
     expect(emitSqlJson(v)).toContain("CREATE OR REPLACE JSON RELATIONAL DUALITY VIEW");
   });
 
-  it("emits IF NOT EXISTS when createMode is ifNotExists", () => {
-    const v: DualityView = { ...readOnly, createMode: "ifNotExists" };
-    expect(emitSqlJson(v)).toContain("CREATE IF NOT EXISTS JSON RELATIONAL DUALITY VIEW");
+  it("I3: createMode type no longer includes ifNotExists; create emits bare CREATE", () => {
+    const v: DualityView = {
+      name: "orders_dv",
+      schema: "app",
+      createMode: "create",
+      root: {
+        table: "orders",
+        permissions: { insert: false, update: false, delete: false },
+        etag: "check",
+      },
+      fields: [{ key: "_id", source: "orders.order_id" }],
+    };
+    const sql = emitSqlJson(v);
+    expect(sql).toContain("CREATE JSON RELATIONAL DUALITY VIEW app.orders_dv");
+    expect(sql).not.toContain("OR REPLACE");
+    expect(sql).not.toContain("IF NOT EXISTS");
   });
 
   it("uses initials alias for underscore-delimited table names", () => {

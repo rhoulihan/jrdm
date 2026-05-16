@@ -40,7 +40,7 @@ export const EtagPolicySchema = z.enum(["check", "nocheck"]);
 
 export type Permissions = z.infer<typeof PermissionsSchema>;
 export type EtagPolicy = z.infer<typeof EtagPolicySchema>;
-export type CreateMode = "create" | "orReplace" | "ifNotExists";
+export type CreateMode = "create" | "orReplace";
 
 const ScalarFieldSchema = z.object({
   key: z.string().min(1),
@@ -81,7 +81,7 @@ export const DualityViewSchema = z
   .object({
     name: z.string().min(1),
     schema: z.string().min(1),
-    createMode: z.enum(["create", "orReplace", "ifNotExists"]),
+    createMode: z.enum(["create", "orReplace"]),
     replication: z.enum(["enable", "disable"]).optional(),
     root: z.object({
       table: z.string().min(1),

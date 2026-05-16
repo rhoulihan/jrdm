@@ -24,7 +24,7 @@ export function emitSqlJson(view: DualityView): string {
   const rootDml = emitDml(view.root.permissions);
 
   return [
-    `${create} JSON RELATIONAL DUALITY VIEW ${view.schema}.${view.name} AS`,
+    `${create} ${view.schema}.${view.name} AS`,
     `SELECT JSON {`,
     `  ${fields}`,
     `}`,
@@ -33,14 +33,9 @@ export function emitSqlJson(view: DualityView): string {
 }
 
 function createPrefix(mode: DualityView["createMode"]): string {
-  switch (mode) {
-    case "create":
-      return "CREATE";
-    case "orReplace":
-      return "CREATE OR REPLACE";
-    case "ifNotExists":
-      return "CREATE IF NOT EXISTS";
-  }
+  return mode === "orReplace"
+    ? "CREATE OR REPLACE JSON RELATIONAL DUALITY VIEW"
+    : "CREATE JSON RELATIONAL DUALITY VIEW";
 }
 
 function emitDml(p: Permissions): string {
