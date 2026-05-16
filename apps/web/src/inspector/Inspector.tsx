@@ -1,20 +1,5 @@
 import { useJrdmStore } from "../state/store";
 
-/** Split a string at each underscore so no single text node equals the original. */
-function SplitName({ name }: { name: string }) {
-  const parts = name.split("_");
-  return (
-    <>
-      {parts.map((p, i) => (
-        <span key={i}>
-          {i > 0 ? "_" : ""}
-          {p}
-        </span>
-      ))}
-    </>
-  );
-}
-
 export function Inspector() {
   const project = useJrdmStore((s) => s.project);
   const selected = useJrdmStore((s) => s.selectedEntity);
@@ -41,9 +26,7 @@ export function Inspector() {
         <tbody>
           {entity.columns.map((c) => (
             <tr key={c.name} className="border-t border-jrdm-border">
-              <td className="py-0.5">
-                <SplitName name={c.name} />
-              </td>
+              <td className="py-0.5">{c.name}</td>
               <td className="py-0.5 text-jrdm-muted">
                 {c.type}
                 {c.length ? `(${c.length})` : ""} {c.nullable ? "NULL" : "NOT NULL"}
