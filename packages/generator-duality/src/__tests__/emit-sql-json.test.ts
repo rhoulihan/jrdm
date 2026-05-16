@@ -400,3 +400,38 @@ describe("emitSqlJson — nested array (1:N) and array-of-array (N:M)", () => {
     expect(sql).toContain("FROM race r");
   });
 });
+
+describe("emitSqlJson — root etag + replication clause", () => {
+  it("emits WITH NOCHECK on the root FROM line when root etag is nocheck", () => {
+    const view: DualityView = {
+      name: "v_dv",
+      schema: "app",
+      createMode: "create",
+      root: {
+        table: "orders",
+        permissions: { insert: false, update: false, delete: false },
+        etag: "nocheck",
+      },
+      fields: [{ key: "_id", source: "orders.order_id" }],
+    };
+    const sql = emitSqlJson(view);
+    expect(sql).toContain("FROM orders o WITH NOCHECK;");
+  });
+
+  it("appends ENABLE/DISABLE LOGICAL REPLICATION when replication is set", () => {
+    const v = (rep: "enable" | "disable"): DualityView => ({
+      name: "v_dv",
+      schema: "app",
+      createMode: "create",
+      replication: rep,
+      root: {
+        table: "orders",
+        permissions: { insert: false, update: false, delete: false },
+        etag: "check",
+      },
+      fields: [{ key: "_id", source: "orders.order_id" }],
+    });
+    expect(emitSqlJson(v("enable"))).toContain("ENABLE LOGICAL REPLICATION");
+    expect(emitSqlJson(v("disable"))).toContain("DISABLE LOGICAL REPLICATION");
+  });
+});
