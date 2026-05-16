@@ -198,3 +198,71 @@ describe("emitSqlJson — golden file", () => {
     expect(emitSqlJson(view).trim()).toBe(golden("orders_dv.sql"));
   });
 });
+
+describe("emitSqlJson — alias context (M1 regression)", () => {
+  it("still emits the scalar golden unchanged (single root table)", () => {
+    const view: DualityView = {
+      name: "orders_dv",
+      schema: "app",
+      createMode: "orReplace",
+      root: {
+        table: "orders",
+        permissions: { insert: true, update: true, delete: true },
+        etag: "check",
+      },
+      fields: [
+        { key: "_id", source: "orders.order_id" },
+        { key: "orderTime", source: "orders.order_datetime" },
+        { key: "orderStatus", source: "orders.order_status" },
+      ],
+    };
+    const sql = emitSqlJson(view);
+    expect(sql).toContain("FROM orders o WITH INSERT UPDATE DELETE;");
+    expect(sql).toContain("'_id' : o.order_id");
+  });
+
+  it("emits WITH NOUPDATE for a noupdate scalar field", () => {
+    const view: DualityView = {
+      name: "orders_dv",
+      schema: "app",
+      createMode: "orReplace",
+      root: {
+        table: "orders",
+        permissions: { insert: true, update: true, delete: true },
+        etag: "check",
+      },
+      fields: [{ key: "_id", source: "orders.order_id", noupdate: true }],
+    };
+    expect(emitSqlJson(view)).toContain("WITH NOUPDATE");
+  });
+
+  it("emits WITH NOCHECK for a field with etag nocheck", () => {
+    const view: DualityView = {
+      name: "orders_dv",
+      schema: "app",
+      createMode: "orReplace",
+      root: {
+        table: "orders",
+        permissions: { insert: true, update: true, delete: true },
+        etag: "check",
+      },
+      fields: [{ key: "_id", source: "orders.order_id", etag: "nocheck" }],
+    };
+    expect(emitSqlJson(view)).toContain("WITH NOCHECK");
+  });
+
+  it("handles a source with no dot (bare column name)", () => {
+    const view: DualityView = {
+      name: "orders_dv",
+      schema: "app",
+      createMode: "orReplace",
+      root: {
+        table: "orders",
+        permissions: { insert: true, update: true, delete: true },
+        etag: "check",
+      },
+      fields: [{ key: "_id", source: "order_id" }],
+    };
+    expect(emitSqlJson(view)).toContain("'_id' : o.order_id");
+  });
+});

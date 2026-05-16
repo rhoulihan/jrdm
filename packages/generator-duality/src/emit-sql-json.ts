@@ -1,35 +1,17 @@
-import type { AnyField, DualityView, Permissions, ScalarField } from "@jrdm/model";
+import type { AnyField, DualityView, NestedField, Permissions, ScalarField } from "@jrdm/model";
+import { AliasContext } from "./alias";
 
 export class UnsupportedFieldError extends Error {
   constructor(key: string, kind: string) {
     super(
-      `UnsupportedFieldError: field "${key}" (kind "${kind}") is not supported by the SQL/JSON emitter yet` +
-        ` (v0.1 is scalar-only; nested emission lands in v0.3)`,
+      `UnsupportedFieldError: field "${key}" (kind "${kind}") is not supported by the SQL/JSON emitter yet`,
     );
     this.name = "UnsupportedFieldError";
   }
 }
 
-function routeField(f: AnyField, rootAlias: string): string {
-  if ("kind" in f) {
-    throw new UnsupportedFieldError(f.key, f.kind);
-  }
-  return emitScalar(f, rootAlias);
-}
-
-export function emitSqlJson(view: DualityView): string {
-  const create = createPrefix(view.createMode);
-  const rootAlias = aliasFor(view.root.table);
-  const fields = view.fields.map((f) => routeField(f, rootAlias)).join(",\n  ");
-  const rootDml = emitDml(view.root.permissions);
-
-  return [
-    `${create} ${view.schema}.${view.name} AS`,
-    `SELECT JSON {`,
-    `  ${fields}`,
-    `}`,
-    `FROM ${view.root.table} ${rootAlias}${rootDml};`,
-  ].join("\n");
+function isNested(f: AnyField): f is NestedField {
+  return "kind" in f;
 }
 
 function createPrefix(mode: DualityView["createMode"]): string {
@@ -38,7 +20,8 @@ function createPrefix(mode: DualityView["createMode"]): string {
     : "CREATE JSON RELATIONAL DUALITY VIEW";
 }
 
-function emitDml(p: Permissions): string {
+function emitDml(p: Permissions | undefined): string {
+  if (!p) return "";
   const parts: string[] = [];
   if (p.insert) parts.push("INSERT");
   if (p.update) parts.push("UPDATE");
@@ -46,16 +29,34 @@ function emitDml(p: Permissions): string {
   return parts.length === 0 ? "" : ` WITH ${parts.join(" ")}`;
 }
 
-function aliasFor(table: string): string {
-  const parts = table.split("_");
-  if (parts.length === 1) return table[0]!.toLowerCase();
-  return parts
-    .map((p) => p[0])
-    .join("")
-    .toLowerCase();
+function emitScalar(field: ScalarField, alias: string): string {
+  const dot = field.source.lastIndexOf(".");
+  const col = dot >= 0 ? field.source.slice(dot + 1) : field.source;
+  let s = `'${field.key}' : ${alias}.${col}`;
+  if (field.noupdate) s += " WITH NOUPDATE";
+  if (field.etag === "nocheck") s += " WITH NOCHECK";
+  return s;
 }
 
-function emitScalar(field: ScalarField, rootAlias: string): string {
-  const [, col] = field.source.split(".");
-  return `'${field.key}' : ${rootAlias}.${col ?? field.source}`;
+function emitField(f: AnyField, parentAlias: string, _ctx: AliasContext): string {
+  if (isNested(f)) {
+    throw new UnsupportedFieldError(f.key, f.kind);
+  }
+  return emitScalar(f, parentAlias);
+}
+
+export function emitSqlJson(view: DualityView): string {
+  const ctx = new AliasContext();
+  const rootAlias = ctx.aliasFor(view.root.table);
+  const create = createPrefix(view.createMode);
+  const body = view.fields.map((f) => emitField(f, rootAlias, ctx)).join(",\n  ");
+  const rootDml = emitDml(view.root.permissions);
+
+  return [
+    `${create} ${view.schema}.${view.name} AS`,
+    `SELECT JSON {`,
+    `  ${body}`,
+    `}`,
+    `FROM ${view.root.table} ${rootAlias}${rootDml};`,
+  ].join("\n");
 }
