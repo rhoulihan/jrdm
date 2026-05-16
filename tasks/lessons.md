@@ -1,5 +1,9 @@
 # Lessons
 
+## 2026-05-16 — Web components are unit-tested with Vitest+RTL+jsdom; e2e mocks our own API
+
+`@jrdm/web` started v0.2b with no unit runner (Playwright e2e only), which the post-C2 test-pair gate cannot satisfy for React components. We added Vitest + @testing-library/react + jsdom and a `test` script, so the web app joins the CI `unit` job and every component has a colocated stem-matched `.test.tsx`. The Playwright golden-path e2e intercepts `POST /api/import/oracle` with a fixture — this is mocking JRDM's OWN HTTP boundary for a deterministic browser test, NOT mocking Oracle (the real Oracle reverse-engineering path stays covered by the server Testcontainers integration test in CI). Rule of thumb: never mock external systems; mocking our own API at the browser edge for UI determinism is acceptable and faster than standing up Oracle in the e2e job.
+
 ## 2026-05-16 — Importer reads use oracledb directly, not @jrdm/exec
 
 `@jrdm/exec`'s `Connection` is the write/deploy abstraction — its `execute` returns `{ rowsAffected }`, not result rows. Schema reverse-engineering needs SELECT rows, so `@jrdm/importer-oracle` defines its own `QueryExec = <T>(sql) => Promise<T[]>` and the server route supplies it via `oracledb.getConnection(...).execute(sql, [], { outFormat: OUT_FORMAT_OBJECT })`. This is intentional separation: deploy/write goes through @jrdm/exec (transactional, ETag-aware); read/introspect uses oracledb directly. Do not "unify" these — they have different result shapes and lifecycles.
