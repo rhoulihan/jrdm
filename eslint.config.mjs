@@ -14,6 +14,7 @@ export default tseslint.config(
       "**/vitest.integration.config.ts",
       "**/*.json",
       ".husky/**",
+      "**/postcss.config.js",
     ],
   },
   js.configs.recommended,

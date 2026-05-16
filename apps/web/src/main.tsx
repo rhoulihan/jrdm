@@ -1,3 +1,5 @@
+// @tested-by: apps/web/src/__tests__/smoke.spec.ts
+import "./index.css";
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { App } from "./App";
