@@ -2,6 +2,12 @@ import { describe, it, expect } from "vitest";
 import { emitGraphql } from "../emit-graphql";
 import type { DualityView } from "@jrdm/model";
 import { MissingLinkError } from "../emit-sql-json";
+import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
+import { dirname, join } from "node:path";
+
+const __d = dirname(fileURLToPath(import.meta.url));
+const gold = (f: string) => readFileSync(join(__d, "__golden__", f), "utf8");
 
 const scalarView: DualityView = {
   name: "orders_dv",
@@ -243,5 +249,63 @@ describe("emitGraphql — nested", () => {
       ],
     };
     expect(() => emitGraphql(v)).toThrow(MissingLinkError);
+  });
+});
+
+const departmentsView: DualityView = {
+  name: "departments_dv",
+  schema: "hr",
+  createMode: "orReplace",
+  root: { table: "dept", permissions: { insert: true, update: true, delete: true }, etag: "check" },
+  fields: [
+    { key: "_id", source: "dept.deptno" },
+    { key: "departmentName", source: "dept.dname" },
+    { key: "location", source: "dept.loc" },
+    {
+      key: "employees",
+      kind: "array",
+      table: "emp",
+      permissions: { insert: true, update: true, delete: true },
+      etag: "check",
+      link: ["deptno"],
+      fields: [
+        { key: "employeeNumber", source: "emp.empno" },
+        { key: "employeeName", source: "emp.ename" },
+        { key: "job", source: "emp.job" },
+        { key: "salary", source: "emp.sal" },
+      ],
+    },
+  ],
+};
+
+const employeeView: DualityView = {
+  name: "employee_dv",
+  schema: "hr",
+  createMode: "orReplace",
+  root: { table: "emp", permissions: { insert: true, update: true, delete: true }, etag: "check" },
+  fields: [
+    { key: "_id", source: "emp.empno" },
+    { key: "employeeName", source: "emp.ename" },
+    {
+      key: "dept",
+      kind: "unnest",
+      table: "dept",
+      permissions: { insert: false, update: true, delete: false },
+      etag: "check",
+      link: ["deptno"],
+      fields: [
+        { key: "departmentNumber", source: "dept.deptno" },
+        { key: "departmentName", source: "dept.dname" },
+      ],
+    },
+  ],
+};
+
+describe("emitGraphql — golden fixtures", () => {
+  it("departments_dv.graphql matches byte-for-byte", () => {
+    expect(emitGraphql(departmentsView)).toBe(gold("departments_dv.graphql"));
+  });
+  it("employee_dv.graphql matches byte-for-byte", () => {
+    expect(emitGraphql(employeeView)).toBe(gold("employee_dv.graphql"));
   });
 });
