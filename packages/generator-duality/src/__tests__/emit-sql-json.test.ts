@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, resolve } from "node:path";
-import { emitSqlJson, UnsupportedFieldError, MissingLinkError } from "../emit-sql-json";
+import { emitSqlJson, MissingLinkError } from "../emit-sql-json";
 import type { DualityView } from "@jrdm/model";
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -125,24 +125,17 @@ describe("C1: nested fields are a loud error, never silently dropped", () => {
     ],
   };
 
-  it("throws UnsupportedFieldError naming the field and kind", () => {
-    expect(() => emitSqlJson(withArray)).toThrow(UnsupportedFieldError);
-    try {
-      emitSqlJson(withArray);
-    } catch (e) {
-      expect((e as Error).message).toContain("items");
-      expect((e as Error).message).toContain("array");
-    }
+  it("now emits array subquery (kind:array is supported as of Task 4)", () => {
+    // arrays are now implemented — emitSqlJson must NOT throw for kind:array
+    const sql = emitSqlJson(withArray);
+    expect(sql).toContain("'items' : [ SELECT JSON {");
+    expect(sql).toContain("FROM order_items oi");
   });
 
-  it("does NOT emit a degenerate view that omits the nested field", () => {
-    let out = "";
-    try {
-      out = emitSqlJson(withArray);
-    } catch {
-      /* expected */
-    }
-    expect(out).toBe(""); // never produced a silently-wrong view
+  it("emits the nested array field (no silent omission)", () => {
+    const sql = emitSqlJson(withArray);
+    expect(sql).toContain("'items'");
+    expect(sql).toContain("itemId");
   });
 
   it("unnest and object kinds (with no link) throw MissingLinkError", () => {
@@ -326,5 +319,84 @@ describe("emitSqlJson — nested object & unnest (1:1)", () => {
       fields: [{ key: "deptName", source: "department.dname" }],
     }) as DualityView;
     expect(() => emitSqlJson(view)).toThrow(MissingLinkError);
+  });
+});
+
+describe("emitSqlJson — nested array (1:N) and array-of-array (N:M)", () => {
+  it("emits a JSON array subquery for kind:array", () => {
+    const view = {
+      name: "team_dv",
+      schema: "app",
+      createMode: "orReplace",
+      root: {
+        table: "team",
+        permissions: { insert: true, update: true, delete: true },
+        etag: "check",
+      },
+      fields: [
+        { key: "_id", source: "team.team_id" },
+        { key: "name", source: "team.name" },
+        {
+          key: "driver",
+          kind: "array",
+          table: "driver",
+          permissions: { insert: true, update: true, delete: false },
+          etag: "check",
+          link: ["team_id"],
+          fields: [
+            { key: "driverId", source: "driver.driver_id" },
+            { key: "name", source: "driver.name", etag: "nocheck" },
+          ],
+        },
+      ],
+    } as DualityView;
+    const sql = emitSqlJson(view);
+    expect(sql).toContain("'driver' : [ SELECT JSON {");
+    expect(sql).toContain("'driverId' : d.driver_id");
+    expect(sql).toContain("'name' : d.name WITH NOCHECK");
+    expect(sql).toContain("FROM driver d WITH INSERT UPDATE");
+    expect(sql).toContain("WHERE d.team_id = t.team_id ]");
+  });
+
+  it("supports an array nested inside an array (N:M via junction modeled as array-of-array)", () => {
+    const view = {
+      name: "race_dv",
+      schema: "app",
+      createMode: "orReplace",
+      root: {
+        table: "race",
+        permissions: { insert: true, update: true, delete: true },
+        etag: "check",
+      },
+      fields: [
+        { key: "_id", source: "race.race_id" },
+        {
+          key: "results",
+          kind: "array",
+          table: "driver_race_map",
+          permissions: { insert: true, update: true, delete: true },
+          etag: "check",
+          link: ["race_id"],
+          fields: [
+            { key: "pos", source: "driver_race_map.position" },
+            {
+              key: "driver",
+              kind: "object",
+              table: "driver",
+              etag: "check",
+              link: ["driver_id"],
+              fields: [{ key: "name", source: "driver.name" }],
+            },
+          ],
+        },
+      ],
+    } as DualityView;
+    const sql = emitSqlJson(view);
+    expect(sql).toContain("'results' : [ SELECT JSON {");
+    expect(sql).toContain("'driver' : ( SELECT JSON {");
+    // distinct aliases (M1): driver_race_map -> drm, driver -> d, race -> r
+    expect(sql).toContain("FROM driver_race_map drm");
+    expect(sql).toContain("FROM driver d");
+    expect(sql).toContain("FROM race r");
   });
 });

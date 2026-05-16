@@ -74,8 +74,8 @@ function emitNested(f: NestedField, parentAlias: string, ctx: AliasContext): str
   return emitArray(f, sub);
 }
 
-function emitArray(f: NestedField, _sub: string): string {
-  throw new UnsupportedFieldError(f.key, f.kind);
+function emitArray(f: NestedField, sub: string): string {
+  return `'${f.key}' : [ ${sub} ]`;
 }
 
 function emitField(f: AnyField, parentAlias: string, ctx: AliasContext): string {
