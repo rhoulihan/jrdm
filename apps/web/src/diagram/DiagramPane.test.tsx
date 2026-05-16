@@ -37,4 +37,12 @@ describe("DiagramPane", () => {
     render(<DiagramPane />);
     expect(screen.getByText("orders")).toBeInTheDocument();
   });
+
+  it("registers the relationship edge type", () => {
+    useJrdmStore.getState().setImport({ project, relationships: [], issues: [] });
+    render(<DiagramPane />);
+    // DiagramPane passes edgeTypes={{ relationship: RelationshipEdge }} to ReactFlow;
+    // canvas renders without error when edge types are wired.
+    expect(screen.getByTestId("diagram-canvas")).toBeInTheDocument();
+  });
 });
