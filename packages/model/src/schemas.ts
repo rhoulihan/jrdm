@@ -13,6 +13,23 @@ export const ColumnSchema = z.object({
   comment: z.string().optional(),
 });
 
+export const ForeignKeySchema = z
+  .object({
+    name: z.string().min(1),
+    columns: z.array(z.string().min(1)).min(1),
+    references: z.object({
+      schema: z.string().min(1),
+      table: z.string().min(1),
+      columns: z.array(z.string().min(1)).min(1),
+    }),
+  })
+  .refine((fk) => fk.columns.length === fk.references.columns.length, {
+    message: "foreign key local/referenced column counts must match",
+    path: ["columns"],
+  });
+
+export type ForeignKey = z.infer<typeof ForeignKeySchema>;
+
 export const EntitySchema = z
   .object({
     name: z.string().min(1),
@@ -20,12 +37,20 @@ export const EntitySchema = z
     columns: z.array(ColumnSchema).min(1),
     primaryKey: z.array(z.string().min(1)).min(1),
     uniqueKeys: z.array(z.array(z.string()).min(1)).optional(),
+    foreignKeys: z.array(ForeignKeySchema).optional(),
     comment: z.string().optional(),
   })
   .refine((e) => e.primaryKey.every((pk) => e.columns.some((c) => c.name === pk)), {
     message: "primaryKey columns must exist on the entity",
     path: ["primaryKey"],
-  });
+  })
+  .refine(
+    (e) =>
+      (e.foreignKeys ?? []).every((fk) =>
+        fk.columns.every((c) => e.columns.some((col) => col.name === c)),
+      ),
+    { message: "foreign key columns must exist on the entity", path: ["foreignKeys"] },
+  );
 
 export type Entity = z.infer<typeof EntitySchema>;
 export type Column = z.infer<typeof ColumnSchema>;
