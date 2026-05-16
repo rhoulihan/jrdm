@@ -1,3 +1,4 @@
+// Covers: packages/generator-duality/src/emit-graphql.ts
 import { describe, it, expect } from "vitest";
 import { emitGraphql } from "../emit-graphql";
 import type { DualityView } from "@jrdm/model";

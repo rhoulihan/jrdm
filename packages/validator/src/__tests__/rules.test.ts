@@ -1,3 +1,4 @@
+// Covers: packages/validator/src/rules.ts
 import { describe, it, expect } from "vitest";
 import {
   validateEntity,
