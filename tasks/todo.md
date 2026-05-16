@@ -88,7 +88,7 @@ Detailed plan: [`docs/plans/2026-05-15-jrdm-v0.1-spike.md`](../docs/plans/2026-0
 - [x] SQL/JSON golden fixtures (departments_dv, employee_dv)
 - [x] GraphQL emitter (root/scalars/nested/@link/anns)
 - [x] GraphQL golden fixtures
-- [x] fast-check dual-syntax round-trip equivalence (10k)
+- [x] fast-check dual-syntax round-trip equivalence (10k, root-etag + M1 repeated-table genuinely covered — v0.3a hardening)
 - [x] validator validateDualityView rules
 - [x] /api/ddl/preview syntax selector (sql|graphql) + 422
 - [x] generator emit perf guard

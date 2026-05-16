@@ -1,3 +1,4 @@
+// Covers: packages/generator-duality/src/arbitrary.ts
 import { describe, it, expect } from "vitest";
 import fc from "fast-check";
 import { dualityViewArbitrary } from "../arbitrary";

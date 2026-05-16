@@ -50,7 +50,7 @@ export function normalizeGraphql(src: string): NormView {
     ...(replication ? { replication } : {}),
     rootTable,
     rootPerms,
-    rootNocheck: false, // GraphQL root nocheck not modeled here (root etag handled SQL-side); kept symmetric: see normalizeSql
+    rootNocheck: rootLine.includes("@nocheck"),
     tree: parseGqlFields(tokens),
   };
 }
@@ -162,7 +162,7 @@ export function normalizeSql(src: string): NormView {
     ...(replication ? { replication } : {}),
     rootTable: fromM![1]!,
     rootPerms,
-    rootNocheck: false, // root etag SQL/GraphQL parity is out of v0.3a scope; always false so root-etag is not part of equivalence check
+    rootNocheck: /\bWITH NOCHECK\b/.test(rootTail),
     tree: parseSqlFields(inner),
   };
 }

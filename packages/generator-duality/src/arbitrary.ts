@@ -1,3 +1,4 @@
+// @tested-by: packages/generator-duality/src/__tests__/arbitrary.test.ts
 import fc from "fast-check";
 import type { AnyField, DualityView, NestedField, ScalarField } from "@jrdm/model";
 
@@ -21,8 +22,22 @@ function scalar(table: string): fc.Arbitrary<ScalarField> {
   );
 }
 
-function nested(depth: number): fc.Arbitrary<NestedField> {
-  return ident.chain((table) =>
+/**
+ * nested() now accepts an optional list of ancestor/sibling table names so that
+ * ~40% of nested fields pick a table from the existing pool (exercising AliasContext
+ * collision handling / M1) and ~60% get a fresh ident.
+ */
+function nested(depth: number, knownTables: string[]): fc.Arbitrary<NestedField> {
+  // Choose table: ~40% from known pool (if non-empty), ~60% fresh ident
+  const tableArb: fc.Arbitrary<string> =
+    knownTables.length > 0
+      ? fc.oneof(
+          { weight: 6, arbitrary: ident },
+          { weight: 4, arbitrary: fc.constantFrom(...knownTables) },
+        )
+      : ident;
+
+  return tableArb.chain((table) =>
     fc.record(
       {
         key: ident,
@@ -33,19 +48,22 @@ function nested(depth: number): fc.Arbitrary<NestedField> {
           nil: undefined,
         }),
         link: fc.array(ident, { minLength: 1, maxLength: 2 }),
-        fields: fields(table, depth - 1),
+        fields: fields(table, depth - 1, [...knownTables, table]),
       },
       { requiredKeys: ["key", "kind", "table", "link", "fields"] },
     ),
   );
 }
 
-function fields(table: string, depth: number): fc.Arbitrary<AnyField[]> {
+function fields(table: string, depth: number, knownTables: string[]): fc.Arbitrary<AnyField[]> {
   const leaf = scalar(table);
   const node: fc.Arbitrary<AnyField> =
     depth <= 0
       ? leaf
-      : fc.oneof({ weight: 3, arbitrary: leaf }, { weight: 1, arbitrary: nested(depth) });
+      : fc.oneof(
+          { weight: 3, arbitrary: leaf },
+          { weight: 1, arbitrary: nested(depth, knownTables) },
+        );
   return fc.array(node, { minLength: 1, maxLength: 4 });
 }
 
@@ -63,7 +81,7 @@ export function dualityViewArbitrary(): fc.Arbitrary<DualityView> {
         permissions,
         etag: fc.constantFrom<"check" | "nocheck">("check", "nocheck"),
       }),
-      fields: fields(rootTable, 2).map((rest) => [
+      fields: fields(rootTable, 2, [rootTable]).map((rest) => [
         { key: "_id", source: `${rootTable}.id` },
         ...rest,
       ]),

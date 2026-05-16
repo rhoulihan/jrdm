@@ -1,3 +1,4 @@
+// @tested-by: packages/generator-duality/src/__tests__/emit-graphql.test.ts
 import type { AnyField, DualityView, NestedField, Permissions, ScalarField } from "@jrdm/model";
 import { MissingLinkError } from "./emit-sql-json";
 
@@ -58,10 +59,12 @@ function emitNested(f: NestedField, indent: string): string {
 export function emitGraphql(view: DualityView): string {
   const create = createPrefix(view.createMode);
   const rootAnns = anns(view.root.permissions);
+  const rootEtag = view.root.etag === "nocheck" ? " @nocheck" : "";
   const indent = "  ";
   const body = view.fields.map((f) => indent + emitField(f, indent)).join("\n");
   let out =
-    `${create} ${view.schema}.${view.name} AS\n` + `${view.root.table}${rootAnns} {\n${body}\n}`;
+    `${create} ${view.schema}.${view.name} AS\n` +
+    `${view.root.table}${rootAnns}${rootEtag} {\n${body}\n}`;
   if (view.replication === "enable") out += "\nENABLE LOGICAL REPLICATION";
   else if (view.replication === "disable") out += "\nDISABLE LOGICAL REPLICATION";
   return out + ";";

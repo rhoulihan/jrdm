@@ -1,3 +1,4 @@
+// @tested-by: packages/validator/src/__tests__/rules.test.ts
 import type { Entity, Project, DualityView, AnyField } from "@jrdm/model";
 
 export interface Issue {
@@ -90,6 +91,7 @@ export function validateProject(project: Project): Issue[] {
 
 export function validateDualityView(view: DualityView): Issue[] {
   const issues: Issue[] = [];
+  // Defense-in-depth: DualityViewSchema already refines fields[0].key === "_id"; this guards unparsed callers.
   if (view.fields[0]?.key !== "_id") {
     issues.push({
       code: "ID_FIRST_REQUIRED",
