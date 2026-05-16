@@ -1,5 +1,9 @@
 # Lessons
 
+## 2026-05-16 — Dual-syntax emitters share errors + are equivalence-tested, not parser-tested
+
+`@jrdm/generator-duality` emits BOTH SQL/JSON and GraphQL from one `DualityView` IR. `MissingLinkError`/`UnsupportedFieldError` are defined once in `emit-sql-json.ts` and imported by `emit-graphql.ts` — single source of truth. Equivalence is proven by `normalize.ts` (purpose-built readers for OUR deterministic output only — NOT general SQL/GraphQL parsers) + a fast-check property test asserting both syntaxes normalize to the same structural form across 10k random IRs. The `arbitrary` guarantees emittable IR (every nested field has a non-empty link; first field is \_id). Root `etag:"nocheck"` SQL/GraphQL parity is intentionally out of v0.3a scope (normalizers force `rootNocheck:false`) — track for v0.3b. M1 (alias collision) is closed by `AliasContext` (first claimant gets bare initials base; collisions get a stable numeric suffix).
+
 ## 2026-05-16 — Web components are unit-tested with Vitest+RTL+jsdom; e2e mocks our own API
 
 `@jrdm/web` started v0.2b with no unit runner (Playwright e2e only), which the post-C2 test-pair gate cannot satisfy for React components. We added Vitest + @testing-library/react + jsdom and a `test` script, so the web app joins the CI `unit` job and every component has a colocated stem-matched `.test.tsx`. The Playwright golden-path e2e intercepts `POST /api/import/oracle` with a fixture — this is mocking JRDM's OWN HTTP boundary for a deterministic browser test, NOT mocking Oracle (the real Oracle reverse-engineering path stays covered by the server Testcontainers integration test in CI). Rule of thumb: never mock external systems; mocking our own API at the browser edge for UI determinism is acceptable and faster than standing up Oracle in the e2e job.

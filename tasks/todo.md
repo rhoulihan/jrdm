@@ -78,6 +78,23 @@ Detailed plan: [`docs/plans/2026-05-15-jrdm-v0.1-spike.md`](../docs/plans/2026-0
 
 ## v0.3 — Document Editor + GraphQL Emitter (Weeks 5–6)
 
+### v0.3a — Nested + GraphQL duality emitter (headless) — DONE
+
+- [x] M1 fix — collision-safe AliasContext
+- [x] emit-sql-json on AliasContext + recursive walk
+- [x] SQL/JSON nested object/unnest (1:1) + MissingLinkError
+- [x] SQL/JSON nested arrays (1:N) incl. array-of-object
+- [x] SQL/JSON root etag + replication clause
+- [x] SQL/JSON golden fixtures (departments_dv, employee_dv)
+- [x] GraphQL emitter (root/scalars/nested/@link/anns)
+- [x] GraphQL golden fixtures
+- [x] fast-check dual-syntax round-trip equivalence (10k)
+- [x] validator validateDualityView rules
+- [x] /api/ddl/preview syntax selector (sql|graphql) + 422
+- [x] generator emit perf guard
+
+### v0.3b — Document editor UI + DDL pane toggle — NEXT
+
 - [ ] Draft v0.3 plan
 - [ ] Rick reviews
 - [ ] Execute
