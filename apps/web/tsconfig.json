@@ -2,7 +2,14 @@
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "jsx": "react-jsx",
-    "moduleResolution": "Bundler"
+    "moduleResolution": "Bundler",
+    "types": ["@testing-library/jest-dom"]
   },
-  "include": ["src/**/*", "vite.config.ts", "playwright.config.ts"]
+  "include": [
+    "src/**/*",
+    "vite.config.ts",
+    "vitest.config.ts",
+    "vitest.setup.ts",
+    "playwright.config.ts"
+  ]
 }
