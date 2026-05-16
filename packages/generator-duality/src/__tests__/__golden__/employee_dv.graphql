@@ -1,0 +1,9 @@
+CREATE OR REPLACE JSON RELATIONAL DUALITY VIEW hr.employee_dv AS
+emp @insert @update @delete {
+  _id : empno
+  employeeName : ename
+  dept : dept @unnest @update @link(to : ["deptno"]) {
+    departmentNumber : deptno
+    departmentName : dname
+  }
+};
