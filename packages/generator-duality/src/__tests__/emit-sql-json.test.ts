@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, resolve } from "node:path";
-import { emitSqlJson } from "../emit-sql-json";
+import { emitSqlJson, UnsupportedFieldError } from "../emit-sql-json";
 import type { DualityView } from "@jrdm/model";
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -85,6 +85,83 @@ describe("emitSqlJson — DML annotations", () => {
     };
     const sql = emitSqlJson(v);
     expect(sql).toContain("FROM order_items oi");
+  });
+});
+
+describe("C1: nested fields are a loud error, never silently dropped", () => {
+  const withArray: DualityView = {
+    name: "orders_dv",
+    schema: "app",
+    createMode: "orReplace",
+    root: {
+      table: "orders",
+      permissions: { insert: true, update: true, delete: true },
+      etag: "check",
+    },
+    fields: [
+      { key: "_id", source: "orders.order_id" },
+      {
+        key: "items",
+        kind: "array",
+        table: "order_items",
+        permissions: { insert: true, update: true, delete: false },
+        etag: "check",
+        link: ["order_id"],
+        fields: [{ key: "itemId", source: "order_items.line_item_id" }],
+      },
+    ],
+  };
+
+  it("throws UnsupportedFieldError naming the field and kind", () => {
+    expect(() => emitSqlJson(withArray)).toThrow(UnsupportedFieldError);
+    try {
+      emitSqlJson(withArray);
+    } catch (e) {
+      expect((e as Error).message).toContain("items");
+      expect((e as Error).message).toContain("array");
+    }
+  });
+
+  it("does NOT emit a degenerate view that omits the nested field", () => {
+    let out = "";
+    try {
+      out = emitSqlJson(withArray);
+    } catch {
+      /* expected */
+    }
+    expect(out).toBe(""); // never produced a silently-wrong view
+  });
+
+  it("unnest and object kinds also throw", () => {
+    for (const kind of ["unnest", "object"] as const) {
+      const v: DualityView = {
+        ...withArray,
+        fields: [
+          { key: "_id", source: "orders.order_id" },
+          { key: "c", kind, table: "customers", fields: [{ key: "cid", source: "customers.id" }] },
+        ],
+      };
+      expect(() => emitSqlJson(v)).toThrow(UnsupportedFieldError);
+    }
+  });
+
+  it("still emits a pure-scalar view correctly (regression)", () => {
+    const scalarOnly: DualityView = {
+      name: "orders_dv",
+      schema: "app",
+      createMode: "orReplace",
+      root: {
+        table: "orders",
+        permissions: { insert: true, update: true, delete: true },
+        etag: "check",
+      },
+      fields: [
+        { key: "_id", source: "orders.order_id" },
+        { key: "orderTime", source: "orders.order_datetime" },
+        { key: "orderStatus", source: "orders.order_status" },
+      ],
+    };
+    expect(emitSqlJson(scalarOnly)).toContain("CREATE OR REPLACE JSON RELATIONAL DUALITY VIEW");
   });
 });
 
