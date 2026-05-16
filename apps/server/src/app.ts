@@ -1,9 +1,10 @@
-// @tested-by: apps/server/src/__tests__/health.test.ts
+// @tested-by: apps/server/src/__tests__/import-oracle.test.ts
 import Fastify from "fastify";
 import cors from "@fastify/cors";
 import { healthRoute } from "./routes/health";
 import { ddlPreviewRoute } from "./routes/ddl-preview";
 import { deployRoute } from "./routes/deploy";
+import { importOracleRoute } from "./routes/import-oracle";
 
 export async function buildApp() {
   const app = Fastify({ logger: false });
@@ -11,5 +12,6 @@ export async function buildApp() {
   await app.register(healthRoute, { prefix: "/api" });
   await app.register(ddlPreviewRoute, { prefix: "/api" });
   await app.register(deployRoute, { prefix: "/api" });
+  await app.register(importOracleRoute, { prefix: "/api" });
   return app;
 }

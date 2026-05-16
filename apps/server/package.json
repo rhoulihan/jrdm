@@ -17,6 +17,7 @@
     "@jrdm/generator-duality": "workspace:*",
     "@jrdm/validator": "workspace:*",
     "@jrdm/exec": "workspace:*",
+    "@jrdm/importer-oracle": "workspace:*",
     "zod": "^3.23.0"
   },
   "devDependencies": {

@@ -49,6 +49,9 @@ importers:
       "@jrdm/generator-duality":
         specifier: workspace:*
         version: link:../../packages/generator-duality
+      "@jrdm/importer-oracle":
+        specifier: workspace:*
+        version: link:../../packages/importer-oracle
       "@jrdm/model":
         specifier: workspace:*
         version: link:../../packages/model
