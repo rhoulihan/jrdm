@@ -1,55 +1,40 @@
-// @tested-by: apps/web/src/__tests__/smoke.spec.ts
-import { useEffect, useState } from "react";
-
-const SAMPLE_VIEW = {
-  name: "orders_dv",
-  schema: "app",
-  createMode: "orReplace",
-  root: {
-    table: "orders",
-    permissions: { insert: true, update: true, delete: true },
-    etag: "check",
-  },
-  fields: [
-    { key: "_id", source: "orders.order_id" },
-    { key: "orderTime", source: "orders.order_datetime" },
-    { key: "orderStatus", source: "orders.order_status" },
-  ],
-};
+// @tested-by: apps/web/src/App.test.tsx
+import { ConnectionForm } from "./connection/ConnectionForm";
+import { DiagramPane } from "./diagram/DiagramPane";
+import { Inspector } from "./inspector/Inspector";
+import { IssuesPanel } from "./issues/IssuesPanel";
+import { useImport } from "./import/useImport";
 
 export function App() {
-  const [status, setStatus] = useState("loading...");
-  const [ddl, setDdl] = useState("");
-
-  useEffect(() => {
-    fetch("/api/health")
-      .then((r) => r.json())
-      .then((j: { status: string; version: string }) => setStatus(`${j.status} (v${j.version})`))
-      .catch(() => setStatus("offline"));
-  }, []);
-
-  async function generate() {
-    const res = await fetch("/api/ddl/preview", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ view: SAMPLE_VIEW }),
-    });
-    const json = (await res.json()) as { sql: string };
-    setDdl(json.sql);
-  }
+  const { run, busy, error } = useImport();
 
   return (
-    <main>
-      <h1>JRDM v0.1</h1>
-      <p data-testid="status">Server: {status}</p>
-      <button
-        onClick={() => {
-          void generate();
-        }}
-      >
-        Generate DDL
-      </button>
-      <pre data-testid="ddl-pane">{ddl}</pre>
-    </main>
+    <div className="h-full flex flex-col bg-surface text-jrdm-text">
+      <header className="px-4 py-2 border-b border-jrdm-border bg-surface-alt">
+        <h1 className="font-semibold text-accent">JRDM — JSON Relational Duality Mapper</h1>
+      </header>
+      {error && (
+        <div
+          data-testid="error-banner"
+          className="bg-[color:var(--danger,#B00020)] text-white px-4 py-2 text-sm"
+        >
+          Import failed: {error}
+        </div>
+      )}
+      <div className="flex flex-1 min-h-0">
+        <aside className="w-72 border-r border-jrdm-border overflow-auto">
+          <ConnectionForm onSubmit={(req) => void run(req)} busy={busy} />
+        </aside>
+        <main className="flex-1 min-w-0">
+          <DiagramPane />
+        </main>
+        <aside className="w-80 border-l border-jrdm-border overflow-auto">
+          <Inspector />
+        </aside>
+      </div>
+      <footer className="h-40 border-t border-jrdm-border overflow-auto bg-surface-alt">
+        <IssuesPanel />
+      </footer>
+    </div>
   );
 }
