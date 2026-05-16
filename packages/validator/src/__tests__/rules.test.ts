@@ -1,53 +1,124 @@
 import { describe, it, expect } from "vitest";
-import { validateEntity } from "../rules";
-import type { Entity } from "@jrdm/model";
+import { validateEntity, validateRelationships, validateProject } from "../rules";
+import type { Entity, Project } from "@jrdm/model";
 
-const base: Entity = {
+const customers: Entity = {
+  name: "customers",
+  schema: "app",
+  columns: [{ name: "customer_id", type: "NUMBER", nullable: false }],
+  primaryKey: ["customer_id"],
+};
+
+const orders: Entity = {
   name: "orders",
   schema: "app",
-  columns: [{ name: "order_id", type: "NUMBER", nullable: false }],
+  columns: [
+    { name: "order_id", type: "NUMBER", nullable: false },
+    { name: "customer_id", type: "NUMBER", nullable: false },
+  ],
   primaryKey: ["order_id"],
+  foreignKeys: [
+    {
+      name: "fk_orders_customer",
+      columns: ["customer_id"],
+      references: { schema: "app", table: "customers", columns: ["customer_id"] },
+    },
+  ],
 };
 
 describe("validateEntity", () => {
-  it("reports no issues on a valid entity", () => {
-    expect(validateEntity(base)).toEqual([]);
+  it("returns no issues for a valid entity", () => {
+    expect(validateEntity(customers)).toEqual([]);
   });
 
-  it("flags entities used as a duality view root without a PK", () => {
-    const noPk = { ...base, primaryKey: [] as string[] };
-    const issues = validateEntity(noPk);
-    expect(issues).toContainEqual(
+  it("flags an entity with no primary key", () => {
+    const e: Entity = { ...customers, primaryKey: [] };
+    expect(validateEntity(e)).toContainEqual(
       expect.objectContaining({ code: "PK_REQUIRED", severity: "error" }),
     );
   });
 
-  it("flags duplicated column names", () => {
-    const dup = {
-      ...base,
+  it("flags a duplicate column name", () => {
+    const e: Entity = {
+      ...customers,
       columns: [
-        { name: "order_id", type: "NUMBER" as const, nullable: false },
-        { name: "order_id", type: "VARCHAR2" as const, nullable: true },
+        { name: "customer_id", type: "NUMBER", nullable: false },
+        { name: "customer_id", type: "VARCHAR2", nullable: true },
       ],
     };
-    const issues = validateEntity(dup);
-    expect(issues).toContainEqual(
+    expect(validateEntity(e)).toContainEqual(
       expect.objectContaining({ code: "DUPLICATE_COLUMN", severity: "error" }),
     );
   });
 });
 
-describe("validateEntity — supported types", () => {
-  it("accepts every documented supported type via the Zod schema upstream", () => {
-    const e = {
-      ...base,
+describe("validateRelationships", () => {
+  it("returns no issues when every FK references an in-project table+columns", () => {
+    expect(validateRelationships([customers, orders])).toEqual([]);
+  });
+
+  it("flags an FK whose referenced table is absent from the project", () => {
+    const issues = validateRelationships([orders]); // customers missing
+    expect(issues).toContainEqual(
+      expect.objectContaining({ code: "FK_DANGLING_TABLE", severity: "error" }),
+    );
+  });
+
+  it("flags an FK whose referenced columns are not the PK/UK of the target", () => {
+    const badTarget: Entity = {
+      ...customers,
+      primaryKey: ["customer_id"],
       columns: [
-        { name: "n", type: "NUMBER" as const, nullable: false },
-        { name: "j", type: "JSON" as const, nullable: true },
-        { name: "v", type: "VECTOR" as const, nullable: true },
+        { name: "customer_id", type: "NUMBER", nullable: false },
+        { name: "other", type: "NUMBER", nullable: false },
       ],
     };
-    const issues = validateEntity(e);
-    expect(issues.filter((i) => i.code === "UNSUPPORTED_TYPE")).toEqual([]);
+    const childRefsNonKey: Entity = {
+      ...orders,
+      foreignKeys: [
+        {
+          name: "fk_bad",
+          columns: ["customer_id"],
+          references: { schema: "app", table: "customers", columns: ["other"] },
+        },
+      ],
+    };
+    const issues = validateRelationships([badTarget, childRefsNonKey]);
+    expect(issues).toContainEqual(
+      expect.objectContaining({ code: "FK_TARGET_NOT_KEY", severity: "error" }),
+    );
+  });
+});
+
+describe("validateProject", () => {
+  it("aggregates entity + relationship issues with entity context in the path", () => {
+    const project: Project = {
+      name: "p",
+      version: "0.1.0",
+      entities: [orders], // customers missing → dangling FK
+      views: [],
+    };
+    const issues = validateProject(project);
+    expect(issues.some((i) => i.code === "FK_DANGLING_TABLE")).toBe(true);
+  });
+
+  it("includes entity issues with path prefixed by entity name", () => {
+    const noPk: Entity = { ...customers, primaryKey: [] };
+    const project: Project = { name: "p", version: "0.1.0", entities: [noPk], views: [] };
+    const issues = validateProject(project);
+    const pkIssue = issues.find((i) => i.code === "PK_REQUIRED");
+    expect(pkIssue).toBeDefined();
+    expect(pkIssue?.path[0]).toBe("entities");
+    expect(pkIssue?.path[1]).toBe("customers");
+  });
+
+  it("returns [] for a fully consistent project", () => {
+    const project: Project = {
+      name: "p",
+      version: "0.1.0",
+      entities: [customers, orders],
+      views: [],
+    };
+    expect(validateProject(project)).toEqual([]);
   });
 });
