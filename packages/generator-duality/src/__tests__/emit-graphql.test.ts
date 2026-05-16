@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { emitGraphql } from "../emit-graphql";
 import type { DualityView } from "@jrdm/model";
+import { MissingLinkError } from "../emit-sql-json";
 
 const scalarView: DualityView = {
   name: "orders_dv",
@@ -129,5 +130,118 @@ describe("emitGraphql — nested fields", () => {
       ],
     };
     expect(() => emitGraphql(view)).toThrow("items");
+  });
+});
+
+describe("emitGraphql — nested", () => {
+  it("array: key : table <anns> @link(to : [...]) [ { children } ] with nested @nocheck", () => {
+    const v: DualityView = {
+      name: "team_dv",
+      schema: "app",
+      createMode: "orReplace",
+      root: {
+        table: "team",
+        permissions: { insert: true, update: true, delete: true },
+        etag: "check",
+      },
+      fields: [
+        { key: "_id", source: "team.team_id" },
+        {
+          key: "driver",
+          kind: "array",
+          table: "driver",
+          permissions: { insert: true, update: true, delete: false },
+          etag: "check",
+          link: ["team_id"],
+          fields: [
+            { key: "driverId", source: "driver.driver_id" },
+            { key: "name", source: "driver.name", etag: "nocheck" },
+          ],
+        },
+      ],
+    };
+    const g = emitGraphql(v);
+    expect(g).toContain('driver : driver @insert @update @link(to : ["team_id"]) [ {');
+    expect(g).toContain("driverId : driver_id");
+    expect(g).toContain("name : name @nocheck");
+    expect(g.trimEnd().endsWith("} ]\n};")).toBe(true);
+  });
+
+  it("unnest: key : table @unnest <anns> @link(...) { children }", () => {
+    const v: DualityView = {
+      name: "employee_dv",
+      schema: "hr",
+      createMode: "orReplace",
+      root: {
+        table: "emp",
+        permissions: { insert: true, update: true, delete: true },
+        etag: "check",
+      },
+      fields: [
+        { key: "_id", source: "emp.empno" },
+        {
+          key: "dept",
+          kind: "unnest",
+          table: "dept",
+          permissions: { insert: false, update: true, delete: false },
+          etag: "check",
+          link: ["deptno"],
+          fields: [{ key: "departmentName", source: "dept.dname" }],
+        },
+      ],
+    };
+    const g = emitGraphql(v);
+    expect(g).toContain('dept : dept @unnest @update @link(to : ["deptno"]) {');
+    expect(g).toContain("departmentName : dname");
+  });
+
+  it("object: key : table <anns> @link(...) { children }", () => {
+    const v: DualityView = {
+      name: "emp_dv",
+      schema: "hr",
+      createMode: "create",
+      root: {
+        table: "emp",
+        permissions: { insert: false, update: false, delete: false },
+        etag: "check",
+      },
+      fields: [
+        { key: "_id", source: "emp.empno" },
+        {
+          key: "dept",
+          kind: "object",
+          table: "dept",
+          etag: "check",
+          link: ["deptno"],
+          fields: [{ key: "name", source: "dept.dname" }],
+        },
+      ],
+    };
+    const g = emitGraphql(v);
+    expect(g).toContain('dept : dept @link(to : ["deptno"]) {');
+  });
+
+  it("throws MissingLinkError for a nested field without link", () => {
+    const v: DualityView = {
+      name: "x_dv",
+      schema: "app",
+      createMode: "create",
+      root: {
+        table: "emp",
+        permissions: { insert: false, update: false, delete: false },
+        etag: "check",
+      },
+      fields: [
+        { key: "_id", source: "emp.empno" },
+        {
+          key: "dept",
+          kind: "object",
+          table: "dept",
+          etag: "check",
+          fields: [{ key: "n", source: "dept.dname" }],
+        },
+      ],
+    };
+    expect(() => emitGraphql(v)).toThrow(MissingLinkError);
   });
 });
