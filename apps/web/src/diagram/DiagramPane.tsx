@@ -4,6 +4,7 @@ import "@xyflow/react/dist/style.css";
 import { useJrdmStore } from "../state/store";
 import { projectToGraph } from "./projectToGraph";
 import { EntityNode } from "./EntityNode";
+import { RelationshipEdge } from "./RelationshipEdge";
 
 export function DiagramPane() {
   const project = useJrdmStore((s) => s.project);
@@ -15,6 +16,7 @@ export function DiagramPane() {
   );
 
   const nodeTypes = useMemo(() => ({ entity: EntityNode }), []);
+  const edgeTypes = useMemo(() => ({ relationship: RelationshipEdge }), []);
 
   if (!project) {
     return (
@@ -26,7 +28,13 @@ export function DiagramPane() {
 
   return (
     <div data-testid="diagram-canvas" className="h-full">
-      <ReactFlow nodes={graph.nodes} edges={graph.edges} nodeTypes={nodeTypes} fitView>
+      <ReactFlow
+        nodes={graph.nodes}
+        edges={graph.edges}
+        nodeTypes={nodeTypes}
+        edgeTypes={edgeTypes}
+        fitView
+      >
         <Background />
         <Controls />
       </ReactFlow>
