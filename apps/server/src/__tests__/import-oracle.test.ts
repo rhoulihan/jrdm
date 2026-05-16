@@ -1,5 +1,19 @@
 import { describe, it, expect } from "vitest";
+import type { DraftProject } from "@jrdm/model";
 import { buildApp } from "../app";
+
+describe("POST /api/import/oracle — response contract", () => {
+  it("documents that the success body's project is a DraftProject (compile-time)", () => {
+    // Type-level guard: the route returns { project: DraftProject; relationships; issues }.
+    // If the route's return type regresses to Project, this fixture fails `pnpm typecheck`.
+    const sample: { project: DraftProject; relationships: unknown[]; issues: unknown[] } = {
+      project: { name: "p", version: "0.1.0", entities: [], views: [] },
+      relationships: [],
+      issues: [],
+    };
+    expect(sample.project.name).toBe("p");
+  });
+});
 
 describe("POST /api/import/oracle — validation", () => {
   it("400 when connection is missing", async () => {

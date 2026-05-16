@@ -36,6 +36,7 @@ export const importOracleRoute: FastifyPluginAsync = async (app) => {
         projectName,
         ...(projectVersion !== undefined ? { projectVersion } : {}),
       });
+      // project is a DraftProject (may have PK-less entities); see @jrdm/model DraftProjectSchema
       return {
         project: result.project,
         relationships: result.relationships,

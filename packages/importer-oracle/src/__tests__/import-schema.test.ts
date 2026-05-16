@@ -94,7 +94,8 @@ describe("importSchema", () => {
     expect(parseProject(stringifyProject(project))).toEqual(project);
   });
 
-  it("surfaces validator issues without throwing (e.g., a table with no PK)", async () => {
+  it("surfaces validator issues without throwing and returns a valid DraftProject", async () => {
+    const { DraftProjectSchema } = await import("@jrdm/model");
     // eslint-disable-next-line @typescript-eslint/require-await
     const noPkExec: QueryExec = async <T>(sql: string): Promise<T[]> => {
       if (sql === TABLES_SQL) return [{ TABLE_NAME: "ORDERS" }] as T[];
@@ -114,7 +115,11 @@ describe("importSchema", () => {
         ] as T[];
       return [] as T[];
     };
-    const { issues } = await importSchema(noPkExec, { schemaOwner: "APP", projectName: "p" });
+    const { project, issues } = await importSchema(noPkExec, {
+      schemaOwner: "APP",
+      projectName: "p",
+    });
     expect(issues.some((i) => i.code === "PK_REQUIRED")).toBe(true);
+    expect(DraftProjectSchema.safeParse(project).success).toBe(true);
   });
 });

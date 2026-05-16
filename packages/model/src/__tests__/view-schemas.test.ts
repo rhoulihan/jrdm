@@ -4,6 +4,8 @@ import {
   type DualityView,
   RelationshipSchema,
   ProjectSchema as _ProjectSchema,
+  DraftProjectSchema,
+  type DraftProject,
 } from "../schemas";
 
 const minimalView: DualityView = {
@@ -179,5 +181,53 @@ describe("DualityViewSchema", () => {
 
   it("ProjectSchema is exported", () => {
     expect(typeof _ProjectSchema.safeParse).toBe("function");
+  });
+});
+
+describe("DraftProjectSchema (import draft — entities may lack a PK)", () => {
+  it("accepts a project whose entity has an empty primaryKey", () => {
+    const draft: DraftProject = {
+      name: "imported",
+      version: "0.1.0",
+      entities: [
+        {
+          name: "logs",
+          schema: "app",
+          columns: [{ name: "msg", type: "VARCHAR2", nullable: true }],
+          primaryKey: [],
+        },
+      ],
+      views: [],
+    };
+    expect(DraftProjectSchema.safeParse(draft).success).toBe(true);
+  });
+
+  it("still rejects an entity with zero columns", () => {
+    const bad = {
+      name: "p",
+      version: "0.1.0",
+      entities: [{ name: "x", schema: "app", columns: [], primaryKey: [] }],
+      views: [],
+    };
+    expect(DraftProjectSchema.safeParse(bad).success).toBe(false);
+  });
+
+  it("a DraftProject with PK-ful entities also satisfies ProjectSchema", async () => {
+    const { ProjectSchema } = await import("../schemas");
+    const ok: DraftProject = {
+      name: "p",
+      version: "0.1.0",
+      entities: [
+        {
+          name: "orders",
+          schema: "app",
+          columns: [{ name: "order_id", type: "NUMBER", nullable: false }],
+          primaryKey: ["order_id"],
+        },
+      ],
+      views: [],
+    };
+    expect(DraftProjectSchema.safeParse(ok).success).toBe(true);
+    expect(ProjectSchema.safeParse(ok).success).toBe(true);
   });
 });
