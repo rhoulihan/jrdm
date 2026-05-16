@@ -30,7 +30,13 @@ export async function importSchema(exec: QueryExec, opts: ImportOptions): Promis
   const fks = await exec<FkRow>(FK_SQL);
 
   const tableNames = tableRows.map((r) => r.TABLE_NAME);
-  const entities = mapRowsToEntities(opts.schemaOwner, tableNames, columns, keys, fks);
+  const { entities, unmapped } = mapRowsToEntities(
+    opts.schemaOwner,
+    tableNames,
+    columns,
+    keys,
+    fks,
+  );
   const { relationships } = classifyCardinality(entities);
 
   const project: DraftProject = {
@@ -41,6 +47,15 @@ export async function importSchema(exec: QueryExec, opts: ImportOptions): Promis
   };
 
   const issues = validateProject(project);
+
+  for (const u of unmapped) {
+    issues.push({
+      code: "UNMAPPED_TYPE",
+      severity: "warning",
+      message: `Column ${u.table}.${u.column} has Oracle type ${u.original}; defaulted to VARCHAR2 — review before generating DDL`,
+      path: ["entities", u.table, "columns", u.column],
+    });
+  }
 
   // A DraftProject with no PK_REQUIRED issue is a fully valid Project; assert that
   // invariant. When PK_REQUIRED is present, the project stays a DraftProject (entity
