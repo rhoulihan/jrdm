@@ -141,3 +141,21 @@ export const RelationshipSchema = z.object({
 });
 
 export type Relationship = z.infer<typeof RelationshipSchema>;
+
+export const ProjectSchema = z
+  .object({
+    name: z.string().min(1),
+    version: z.string().min(1),
+    description: z.string().optional(),
+    entities: z.array(EntitySchema),
+    views: z.array(DualityViewSchema),
+  })
+  .refine(
+    (p) => {
+      const keys = p.entities.map((e) => `${e.schema}.${e.name}`);
+      return new Set(keys).size === keys.length;
+    },
+    { message: "duplicate entity (schema.name) in project", path: ["entities"] },
+  );
+
+export type Project = z.infer<typeof ProjectSchema>;

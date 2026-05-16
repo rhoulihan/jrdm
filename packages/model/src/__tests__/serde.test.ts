@@ -48,3 +48,30 @@ describe("view serde", () => {
     expect(parseView(yaml)).toEqual(view);
   });
 });
+
+import { parseProject, stringifyProject } from "../serde";
+import type { Project } from "../schemas";
+
+describe("project serde", () => {
+  const project: Project = {
+    name: "orders",
+    version: "0.1.0",
+    entities: [
+      {
+        name: "orders",
+        schema: "app",
+        columns: [{ name: "order_id", type: "NUMBER", nullable: false }],
+        primaryKey: ["order_id"],
+      },
+    ],
+    views: [],
+  };
+
+  it("round-trips a project through YAML", () => {
+    expect(parseProject(stringifyProject(project))).toEqual(project);
+  });
+
+  it("throws on schema-invalid project YAML", () => {
+    expect(() => parseProject("name: x")).toThrow();
+  });
+});

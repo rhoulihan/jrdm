@@ -1,5 +1,10 @@
 import { describe, it, expect } from "vitest";
-import { DualityViewSchema, type DualityView, RelationshipSchema } from "../schemas";
+import {
+  DualityViewSchema,
+  type DualityView,
+  RelationshipSchema,
+  ProjectSchema as _ProjectSchema,
+} from "../schemas";
 
 const minimalView: DualityView = {
   name: "orders_dv",
@@ -170,5 +175,9 @@ describe("DualityViewSchema", () => {
       ],
     };
     expect(sample.fields.length).toBe(2);
+  });
+
+  it("ProjectSchema is exported", () => {
+    expect(typeof _ProjectSchema.safeParse).toBe("function");
   });
 });
