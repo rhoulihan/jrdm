@@ -60,4 +60,72 @@ describe("DualityViewSchema", () => {
     };
     expect(DualityViewSchema.safeParse(broken).success).toBe(false);
   });
+
+  // I1: nested fields must carry permissions/etag/link/noupdate through parse
+  it("I1: nested array fields preserve permissions/etag/link through parse", () => {
+    const v = {
+      name: "orders_dv",
+      schema: "app",
+      createMode: "orReplace",
+      root: {
+        table: "orders",
+        permissions: { insert: true, update: true, delete: true },
+        etag: "check",
+      },
+      fields: [
+        { key: "_id", source: "orders.order_id" },
+        {
+          key: "items",
+          kind: "array",
+          table: "order_items",
+          permissions: { insert: true, update: true, delete: false },
+          etag: "nocheck",
+          link: ["order_id"],
+          fields: [{ key: "itemId", source: "order_items.line_item_id", noupdate: true }],
+        },
+      ],
+    };
+    const parsed = DualityViewSchema.parse(v);
+    // Use non-null assertion: we control the data above, field[1] is always present.
+    // noUncheckedIndexedAccess requires explicit assertion; "kind" in item narrows AnyField.
+    const item = parsed.fields[1]!;
+    // These property accesses must TYPECHECK — the inferred type must expose them:
+    if ("kind" in item && item.kind === "array") {
+      expect(item.permissions).toEqual({ insert: true, update: true, delete: false });
+      expect(item.etag).toBe("nocheck");
+      expect(item.link).toEqual(["order_id"]);
+      const inner = item.fields[0]!;
+      expect("noupdate" in inner && inner.noupdate).toBe(true);
+    } else {
+      throw new Error("expected array kind");
+    }
+  });
+
+  it("I1: a static type-level assertion that DualityView nested fields carry permissions", () => {
+    // This is a compile-time guarantee; if the inferred type lacks `permissions`
+    // on the array variant, `pnpm typecheck` fails.
+    const sample: DualityView = {
+      name: "v",
+      schema: "s",
+      createMode: "create",
+      root: {
+        table: "t",
+        permissions: { insert: false, update: false, delete: false },
+        etag: "check",
+      },
+      fields: [
+        { key: "_id", source: "t.id" },
+        {
+          key: "kids",
+          kind: "array",
+          table: "k",
+          permissions: { insert: true, update: false, delete: false },
+          etag: "check",
+          link: ["t_id"],
+          fields: [{ key: "x", source: "k.x" }],
+        },
+      ],
+    };
+    expect(sample.fields.length).toBe(2);
+  });
 });
