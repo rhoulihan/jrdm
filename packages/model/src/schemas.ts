@@ -159,3 +159,48 @@ export const ProjectSchema = z
   );
 
 export type Project = z.infer<typeof ProjectSchema>;
+
+// Draft entity: identical to EntitySchema but primaryKey may be empty.
+// Used for freshly imported schemas where a table has no PK yet (the validator
+// surfaces a PK_REQUIRED issue; the user adds a key before this becomes a Project).
+export const DraftEntitySchema = z
+  .object({
+    name: z.string().min(1),
+    schema: z.string().min(1),
+    columns: z.array(ColumnSchema).min(1),
+    primaryKey: z.array(z.string().min(1)),
+    uniqueKeys: z.array(z.array(z.string()).min(1)).optional(),
+    foreignKeys: z.array(ForeignKeySchema).optional(),
+    comment: z.string().optional(),
+  })
+  .refine((e) => e.primaryKey.every((pk) => e.columns.some((c) => c.name === pk)), {
+    message: "primaryKey columns must exist on the entity",
+    path: ["primaryKey"],
+  })
+  .refine(
+    (e) =>
+      (e.foreignKeys ?? []).every((fk) =>
+        fk.columns.every((c) => e.columns.some((col) => col.name === c)),
+      ),
+    { message: "foreign key columns must exist on the entity", path: ["foreignKeys"] },
+  );
+
+export type DraftEntity = z.infer<typeof DraftEntitySchema>;
+
+export const DraftProjectSchema = z
+  .object({
+    name: z.string().min(1),
+    version: z.string().min(1),
+    description: z.string().optional(),
+    entities: z.array(DraftEntitySchema),
+    views: z.array(DualityViewSchema),
+  })
+  .refine(
+    (p) => {
+      const keys = p.entities.map((e) => `${e.schema}.${e.name}`);
+      return new Set(keys).size === keys.length;
+    },
+    { message: "duplicate entity (schema.name) in project", path: ["entities"] },
+  );
+
+export type DraftProject = z.infer<typeof DraftProjectSchema>;
