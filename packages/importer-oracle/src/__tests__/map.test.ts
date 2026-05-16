@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { mapRowsToEntities, type ColumnRow, type KeyRow, type FkRow } from "../map";
+import { mapRowsToEntities, normalizeType, type ColumnRow, type KeyRow, type FkRow } from "../map";
 
 const columnRows: ColumnRow[] = [
   {
@@ -80,7 +80,13 @@ const fkRows: FkRow[] = [
 
 describe("mapRowsToEntities", () => {
   it("maps tables, columns (types, nullability, length/precision), PK, and FK", () => {
-    const entities = mapRowsToEntities("APP", ["ORDERS", "CUSTOMERS"], columnRows, keyRows, fkRows);
+    const { entities } = mapRowsToEntities(
+      "APP",
+      ["ORDERS", "CUSTOMERS"],
+      columnRows,
+      keyRows,
+      fkRows,
+    );
     const orders = entities.find((e) => e.name === "orders")!;
     expect(orders.schema).toBe("app");
     expect(orders.columns.map((c) => c.name)).toEqual(["order_id", "customer_id", "status"]);
@@ -109,17 +115,56 @@ describe("mapRowsToEntities", () => {
         POSITION: 1,
       },
     ];
-    const entities = mapRowsToEntities("APP", ["CUSTOMERS"], columnRows, uk, []);
+    const { entities } = mapRowsToEntities("APP", ["CUSTOMERS"], columnRows, uk, []);
     expect(entities[0]!.uniqueKeys).toEqual([["customer_id"]]);
   });
 
   it("lower-cases identifiers and orders columns by COLUMN_ID", () => {
-    const entities = mapRowsToEntities("APP", ["ORDERS"], columnRows, keyRows, []);
+    const { entities } = mapRowsToEntities("APP", ["ORDERS"], columnRows, keyRows, []);
     expect(entities[0]!.columns.map((c) => c.name)).toEqual(["order_id", "customer_id", "status"]);
   });
 
   it("falls back to a synthetic primaryKey-less entity when no PK exists (validator will flag it)", () => {
-    const entities = mapRowsToEntities("APP", ["ORDERS"], columnRows, [], []);
+    const { entities } = mapRowsToEntities("APP", ["ORDERS"], columnRows, [], []);
     expect(entities[0]!.primaryKey).toEqual([]);
+  });
+});
+
+describe("normalizeType — loud fallback", () => {
+  it("returns the mapped type and unmapped:false for a known type", () => {
+    expect(normalizeType("NUMBER")).toEqual({ type: "NUMBER", unmapped: false });
+  });
+
+  it("strips precision and maps TIMESTAMP(6) without flagging unmapped", () => {
+    expect(normalizeType("TIMESTAMP(6)")).toEqual({ type: "TIMESTAMP", unmapped: false });
+  });
+
+  it("flags an unknown type as unmapped while still defaulting to VARCHAR2", () => {
+    expect(normalizeType("SDO_GEOMETRY")).toEqual({
+      type: "VARCHAR2",
+      unmapped: true,
+      original: "SDO_GEOMETRY",
+    });
+  });
+});
+
+describe("mapRowsToEntities — records unmapped columns", () => {
+  it("returns an unmapped list with table+column+original type", () => {
+    const cols = [
+      {
+        TABLE_NAME: "GEO",
+        COLUMN_NAME: "SHAPE",
+        DATA_TYPE: "SDO_GEOMETRY",
+        DATA_PRECISION: null,
+        DATA_SCALE: null,
+        CHAR_LENGTH: null,
+        NULLABLE: "Y",
+        DATA_DEFAULT: null,
+        COLUMN_ID: 1,
+      },
+    ];
+    const result = mapRowsToEntities("APP", ["GEO"], cols, [], []);
+    expect(result.unmapped).toEqual([{ table: "geo", column: "shape", original: "SDO_GEOMETRY" }]);
+    expect(result.entities[0]!.columns[0]!.type).toBe("VARCHAR2");
   });
 });

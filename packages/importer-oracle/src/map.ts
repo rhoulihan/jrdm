@@ -34,28 +34,32 @@ export interface FkRow {
 
 const SUPPORTED = new Set<string>(SUPPORTED_TYPES);
 
-function normalizeType(dataType: string): SupportedType {
-  const t = dataType.toUpperCase();
-  if (SUPPORTED.has(t)) return t as SupportedType;
-  // Oracle reports e.g. "TIMESTAMP(6)" — strip parenthetical precision
-  const base = t.replace(/\(.*\)/, "").trim();
-  if (SUPPORTED.has(base)) return base as SupportedType;
-  // Map common dictionary spellings
-  if (base.startsWith("TIMESTAMP")) return "TIMESTAMP";
-  return "VARCHAR2"; // safe default; validator/user can correct
+export interface NormalizeResult {
+  type: SupportedType;
+  unmapped: boolean;
+  original?: string;
 }
 
-function mapColumn(r: ColumnRow): Column {
-  const col: Column = {
-    name: r.COLUMN_NAME.toLowerCase(),
-    type: normalizeType(r.DATA_TYPE),
-    nullable: r.NULLABLE === "Y",
-  };
-  if (r.DATA_PRECISION != null) col.precision = r.DATA_PRECISION;
-  if (r.DATA_SCALE != null) col.scale = r.DATA_SCALE;
-  if (r.CHAR_LENGTH != null && r.CHAR_LENGTH > 0) col.length = r.CHAR_LENGTH;
-  if (r.DATA_DEFAULT != null) col.default = String(r.DATA_DEFAULT).trim();
-  return col;
+export function normalizeType(dataType: string): NormalizeResult {
+  const t = dataType.toUpperCase();
+  if (SUPPORTED.has(t)) return { type: t as SupportedType, unmapped: false };
+  // Oracle reports e.g. "TIMESTAMP(6)" — strip parenthetical precision
+  const base = t.replace(/\(.*\)/, "").trim();
+  if (SUPPORTED.has(base)) return { type: base as SupportedType, unmapped: false };
+  // Map common dictionary spellings
+  if (base.startsWith("TIMESTAMP")) return { type: "TIMESTAMP", unmapped: false };
+  return { type: "VARCHAR2", unmapped: true, original: dataType };
+}
+
+export interface UnmappedColumn {
+  table: string;
+  column: string;
+  original: string;
+}
+
+export interface MapResult {
+  entities: Entity[];
+  unmapped: UnmappedColumn[];
 }
 
 export function mapRowsToEntities(
@@ -64,14 +68,34 @@ export function mapRowsToEntities(
   columns: ColumnRow[],
   keys: KeyRow[],
   fks: FkRow[],
-): Entity[] {
+): MapResult {
   const schema = schemaOwner.toLowerCase();
+  const unmapped: UnmappedColumn[] = [];
 
-  return tableNames.map((tn) => {
+  const entities = tableNames.map((tn) => {
     const tableCols = columns
       .filter((c) => c.TABLE_NAME === tn)
       .sort((a, b) => a.COLUMN_ID - b.COLUMN_ID)
-      .map(mapColumn);
+      .map((r): Column => {
+        const norm = normalizeType(r.DATA_TYPE);
+        if (norm.unmapped) {
+          unmapped.push({
+            table: tn.toLowerCase(),
+            column: r.COLUMN_NAME.toLowerCase(),
+            original: norm.original ?? r.DATA_TYPE,
+          });
+        }
+        const col: Column = {
+          name: r.COLUMN_NAME.toLowerCase(),
+          type: norm.type,
+          nullable: r.NULLABLE === "Y",
+        };
+        if (r.DATA_PRECISION != null) col.precision = r.DATA_PRECISION;
+        if (r.DATA_SCALE != null) col.scale = r.DATA_SCALE;
+        if (r.CHAR_LENGTH != null && r.CHAR_LENGTH > 0) col.length = r.CHAR_LENGTH;
+        if (r.DATA_DEFAULT != null) col.default = String(r.DATA_DEFAULT).trim();
+        return col;
+      });
 
     const tableKeys = keys.filter((k) => k.TABLE_NAME === tn);
     const pkRows = tableKeys
@@ -118,4 +142,6 @@ export function mapRowsToEntities(
     if (foreignKeys.length > 0) entity.foreignKeys = foreignKeys;
     return entity;
   });
+
+  return { entities, unmapped };
 }

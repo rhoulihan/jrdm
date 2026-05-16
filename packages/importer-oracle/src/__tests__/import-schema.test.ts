@@ -122,4 +122,53 @@ describe("importSchema", () => {
     expect(issues.some((i) => i.code === "PK_REQUIRED")).toBe(true);
     expect(DraftProjectSchema.safeParse(project).success).toBe(true);
   });
+
+  it("emits an UNMAPPED_TYPE warning issue for unknown Oracle column types", async () => {
+    // eslint-disable-next-line @typescript-eslint/require-await
+    const exec: QueryExec = async <T>(sql: string): Promise<T[]> => {
+      if (sql === TABLES_SQL) return [{ TABLE_NAME: "GEO" }] as T[];
+      if (sql === COLUMNS_SQL)
+        return [
+          {
+            TABLE_NAME: "GEO",
+            COLUMN_NAME: "ID",
+            DATA_TYPE: "NUMBER",
+            DATA_PRECISION: 10,
+            DATA_SCALE: 0,
+            CHAR_LENGTH: 0,
+            NULLABLE: "N",
+            DATA_DEFAULT: null,
+            COLUMN_ID: 1,
+          },
+          {
+            TABLE_NAME: "GEO",
+            COLUMN_NAME: "SHAPE",
+            DATA_TYPE: "SDO_GEOMETRY",
+            DATA_PRECISION: null,
+            DATA_SCALE: null,
+            CHAR_LENGTH: null,
+            NULLABLE: "Y",
+            DATA_DEFAULT: null,
+            COLUMN_ID: 2,
+          },
+        ] as T[];
+      if (sql === PK_UK_SQL)
+        return [
+          {
+            CONSTRAINT_NAME: "PK_GEO",
+            CONSTRAINT_TYPE: "P",
+            TABLE_NAME: "GEO",
+            COLUMN_NAME: "ID",
+            POSITION: 1,
+          },
+        ] as T[];
+      return [] as T[];
+    };
+    const { issues } = await importSchema(exec, { schemaOwner: "APP", projectName: "p" });
+    const u = issues.find((i) => i.code === "UNMAPPED_TYPE");
+    expect(u).toBeDefined();
+    expect(u!.severity).toBe("warning");
+    expect(u!.message).toContain("SDO_GEOMETRY");
+    expect(u!.message).toContain("shape");
+  });
 });
