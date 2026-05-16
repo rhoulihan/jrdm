@@ -65,6 +65,7 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm build
       - run: pnpm --filter @jrdm/exec test:int
+      - run: pnpm --filter @jrdm/importer-oracle test:int
       - run: pnpm --filter @jrdm/server test:int
 
   e2e:
