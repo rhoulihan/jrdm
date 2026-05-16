@@ -92,11 +92,15 @@ export function emitSqlJson(view: DualityView): string {
   const body = view.fields.map((f) => emitField(f, rootAlias, ctx)).join(",\n  ");
   const rootDml = emitDml(view.root.permissions);
 
-  return [
+  const rootCheck = view.root.etag === "nocheck" ? " WITH NOCHECK" : "";
+  const lines = [
     `${create} ${view.schema}.${view.name} AS`,
     `SELECT JSON {`,
     `  ${body}`,
     `}`,
-    `FROM ${view.root.table} ${rootAlias}${rootDml};`,
-  ].join("\n");
+    `FROM ${view.root.table} ${rootAlias}${rootDml}${rootCheck}`,
+  ];
+  if (view.replication === "enable") lines.push("ENABLE LOGICAL REPLICATION");
+  else if (view.replication === "disable") lines.push("DISABLE LOGICAL REPLICATION");
+  return lines.join("\n") + ";";
 }
