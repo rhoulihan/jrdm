@@ -105,7 +105,7 @@ describe("POST /api/deploy — unit (no DB)", () => {
     await app.close();
   });
 
-  it("returns 422 on a nested view (UnsupportedFieldError)", async () => {
+  it("returns 422 on a nested view (UnsupportedFieldError or MissingLinkError)", async () => {
     const app = await buildApp();
     const res = await app.inject({
       method: "POST",

@@ -10,6 +10,15 @@ export class UnsupportedFieldError extends Error {
   }
 }
 
+export class MissingLinkError extends Error {
+  constructor(key: string) {
+    super(
+      `MissingLinkError: nested field "${key}" requires a non-empty "link" (join columns) to emit DDL`,
+    );
+    this.name = "MissingLinkError";
+  }
+}
+
 function isNested(f: AnyField): f is NestedField {
   return "kind" in f;
 }
@@ -38,9 +47,40 @@ function emitScalar(field: ScalarField, alias: string): string {
   return s;
 }
 
-function emitField(f: AnyField, parentAlias: string, _ctx: AliasContext): string {
+function joinPredicate(childAlias: string, parentAlias: string, link: string[]): string {
+  return link.map((c) => `${childAlias}.${c} = ${parentAlias}.${c}`).join(" AND ");
+}
+
+function emitChildBody(fields: AnyField[], alias: string, ctx: AliasContext): string {
+  return fields.map((f) => emitField(f, alias, ctx)).join(",\n    ");
+}
+
+function emitNested(f: NestedField, parentAlias: string, ctx: AliasContext): string {
+  if (!f.link || f.link.length === 0) throw new MissingLinkError(f.key);
+  const childAlias = ctx.aliasFor(f.table);
+  const dml = emitDml(f.permissions);
+  const check = f.etag === "nocheck" ? " WITH NOCHECK" : "";
+  const where = joinPredicate(childAlias, parentAlias, f.link);
+  const inner = emitChildBody(f.fields, childAlias, ctx);
+  const sub = `SELECT JSON {\n    ${inner}\n  } FROM ${f.table} ${childAlias}${dml}${check} WHERE ${where}`;
+
+  if (f.kind === "unnest") {
+    return `UNNEST ( ${sub} )`;
+  }
+  if (f.kind === "object") {
+    return `'${f.key}' : ( ${sub} )`;
+  }
+  // kind === "array" — implemented in Task 4
+  return emitArray(f, sub);
+}
+
+function emitArray(f: NestedField, _sub: string): string {
+  throw new UnsupportedFieldError(f.key, f.kind);
+}
+
+function emitField(f: AnyField, parentAlias: string, ctx: AliasContext): string {
   if (isNested(f)) {
-    throw new UnsupportedFieldError(f.key, f.kind);
+    return emitNested(f, parentAlias, ctx);
   }
   return emitScalar(f, parentAlias);
 }

@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, resolve } from "node:path";
-import { emitSqlJson, UnsupportedFieldError } from "../emit-sql-json";
+import { emitSqlJson, UnsupportedFieldError, MissingLinkError } from "../emit-sql-json";
 import type { DualityView } from "@jrdm/model";
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -145,7 +145,7 @@ describe("C1: nested fields are a loud error, never silently dropped", () => {
     expect(out).toBe(""); // never produced a silently-wrong view
   });
 
-  it("unnest and object kinds also throw", () => {
+  it("unnest and object kinds (with no link) throw MissingLinkError", () => {
     for (const kind of ["unnest", "object"] as const) {
       const v: DualityView = {
         ...withArray,
@@ -154,7 +154,7 @@ describe("C1: nested fields are a loud error, never silently dropped", () => {
           { key: "c", kind, table: "customers", fields: [{ key: "cid", source: "customers.id" }] },
         ],
       };
-      expect(() => emitSqlJson(v)).toThrow(UnsupportedFieldError);
+      expect(() => emitSqlJson(v)).toThrow(MissingLinkError);
     }
   });
 
@@ -264,5 +264,67 @@ describe("emitSqlJson — alias context (M1 regression)", () => {
       fields: [{ key: "_id", source: "order_id" }],
     };
     expect(emitSqlJson(view)).toContain("'_id' : o.order_id");
+  });
+});
+
+describe("emitSqlJson — nested object & unnest (1:1)", () => {
+  const base = (extra: object) => ({
+    name: "employee_dv",
+    schema: "app",
+    createMode: "orReplace" as const,
+    root: {
+      table: "emp",
+      permissions: { insert: true, update: true, delete: true },
+      etag: "check" as const,
+    },
+    fields: [
+      { key: "_id", source: "emp.empno" },
+      { key: "employeeName", source: "emp.ename" },
+      extra,
+    ],
+  });
+
+  it("emits a nested object subquery with join + dml", () => {
+    const view = base({
+      key: "dept",
+      kind: "object",
+      table: "department",
+      permissions: { insert: false, update: true, delete: false },
+      etag: "check",
+      link: ["deptno"],
+      fields: [{ key: "deptName", source: "department.dname" }],
+    }) as DualityView;
+    const sql = emitSqlJson(view);
+    expect(sql).toContain("'dept' : ( SELECT JSON {");
+    expect(sql).toContain("'deptName' : d.dname");
+    expect(sql).toContain("FROM department d WITH UPDATE");
+    expect(sql).toContain("WHERE d.deptno = e.deptno )");
+  });
+
+  it("emits UNNEST (no key prefix) for kind:unnest", () => {
+    const view = base({
+      key: "deptFlat",
+      kind: "unnest",
+      table: "department",
+      etag: "check",
+      link: ["deptno"],
+      fields: [{ key: "deptName", source: "department.dname" }],
+    }) as DualityView;
+    const sql = emitSqlJson(view);
+    expect(sql).toContain("UNNEST ( SELECT JSON {");
+    expect(sql).not.toContain("'deptFlat' :");
+    expect(sql).toContain("FROM department d");
+    expect(sql).toContain("WHERE d.deptno = e.deptno )");
+  });
+
+  it("throws MissingLinkError when a nested field has no link", () => {
+    const view = base({
+      key: "dept",
+      kind: "object",
+      table: "department",
+      etag: "check",
+      fields: [{ key: "deptName", source: "department.dname" }],
+    }) as DualityView;
+    expect(() => emitSqlJson(view)).toThrow(MissingLinkError);
   });
 });
