@@ -1,4 +1,4 @@
-import type { Entity, Project } from "@jrdm/model";
+import type { Entity, Project, DualityView, AnyField } from "@jrdm/model";
 
 export interface Issue {
   code: string;
@@ -85,5 +85,43 @@ export function validateProject(project: Project): Issue[] {
     }
   }
   issues.push(...validateRelationships(project.entities));
+  return issues;
+}
+
+export function validateDualityView(view: DualityView): Issue[] {
+  const issues: Issue[] = [];
+  if (view.fields[0]?.key !== "_id") {
+    issues.push({
+      code: "ID_FIRST_REQUIRED",
+      severity: "error",
+      message: `Duality view ${view.name}: the first field must be "_id"`,
+      path: ["fields", 0],
+    });
+  }
+
+  const walk = (fields: AnyField[], parentTable: string, path: (string | number)[]) => {
+    fields.forEach((f, i) => {
+      if (!("kind" in f)) return;
+      const here = [...path, i];
+      if (!f.link || f.link.length === 0) {
+        issues.push({
+          code: "NESTED_LINK_REQUIRED",
+          severity: "error",
+          message: `Nested field "${f.key}" must declare a non-empty link (join columns)`,
+          path: here,
+        });
+      }
+      if (f.table === parentTable) {
+        issues.push({
+          code: "NESTED_SELF_TABLE",
+          severity: "warning",
+          message: `Nested field "${f.key}" references the same table "${f.table}" as its parent`,
+          path: here,
+        });
+      }
+      walk(f.fields, f.table, [...here, "fields"]);
+    });
+  };
+  walk(view.fields, view.root.table, ["fields"]);
   return issues;
 }

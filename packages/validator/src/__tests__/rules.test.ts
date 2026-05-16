@@ -1,6 +1,11 @@
 import { describe, it, expect } from "vitest";
-import { validateEntity, validateRelationships, validateProject } from "../rules";
-import type { Entity, Project } from "@jrdm/model";
+import {
+  validateEntity,
+  validateRelationships,
+  validateProject,
+  validateDualityView,
+} from "../rules";
+import type { Entity, Project, DualityView } from "@jrdm/model";
 
 const customers: Entity = {
   name: "customers",
@@ -120,5 +125,85 @@ describe("validateProject", () => {
       views: [],
     };
     expect(validateProject(project)).toEqual([]);
+  });
+});
+
+const okView: DualityView = {
+  name: "t_dv",
+  schema: "app",
+  createMode: "create",
+  root: {
+    table: "team",
+    permissions: { insert: false, update: false, delete: false },
+    etag: "check",
+  },
+  fields: [
+    { key: "_id", source: "team.team_id" },
+    {
+      key: "driver",
+      kind: "array",
+      table: "driver",
+      etag: "check",
+      link: ["team_id"],
+      fields: [{ key: "name", source: "driver.name" }],
+    },
+  ],
+};
+
+describe("validateDualityView", () => {
+  it("returns [] for a well-formed view", () => {
+    expect(validateDualityView(okView)).toEqual([]);
+  });
+
+  it("flags a nested field with no link", () => {
+    const v: DualityView = {
+      ...okView,
+      fields: [
+        { key: "_id", source: "team.team_id" },
+        {
+          key: "driver",
+          kind: "array",
+          table: "driver",
+          etag: "check",
+          fields: [{ key: "n", source: "driver.name" }],
+        },
+      ],
+    };
+    expect(validateDualityView(v)).toContainEqual(
+      expect.objectContaining({ code: "NESTED_LINK_REQUIRED", severity: "error" }),
+    );
+  });
+
+  it("flags when the first field is not _id", () => {
+    const v: DualityView = {
+      ...okView,
+      fields: [
+        { key: "name", source: "team.name" },
+        { key: "_id", source: "team.team_id" },
+      ],
+    };
+    expect(validateDualityView(v)).toContainEqual(
+      expect.objectContaining({ code: "ID_FIRST_REQUIRED", severity: "error" }),
+    );
+  });
+
+  it("flags a nested field whose table equals its parent table", () => {
+    const v: DualityView = {
+      ...okView,
+      fields: [
+        { key: "_id", source: "team.team_id" },
+        {
+          key: "self",
+          kind: "object",
+          table: "team",
+          etag: "check",
+          link: ["team_id"],
+          fields: [{ key: "n", source: "team.name" }],
+        },
+      ],
+    };
+    expect(validateDualityView(v)).toContainEqual(
+      expect.objectContaining({ code: "NESTED_SELF_TABLE", severity: "warning" }),
+    );
   });
 });
