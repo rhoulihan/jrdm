@@ -15,7 +15,8 @@
   },
   "dependencies": {
     "@jrdm/model": "workspace:*",
-    "@jrdm/exec": "workspace:*"
+    "@jrdm/exec": "workspace:*",
+    "@jrdm/validator": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",
