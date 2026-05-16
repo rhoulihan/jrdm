@@ -2,7 +2,7 @@
 import type { FastifyPluginAsync } from "fastify";
 import { z } from "zod";
 import { DualityViewSchema } from "@jrdm/model";
-import { emitSqlJson, UnsupportedFieldError } from "@jrdm/generator-duality";
+import { emitSqlJson, UnsupportedFieldError, MissingLinkError } from "@jrdm/generator-duality";
 import { openOracleConnection, deployDdl } from "@jrdm/exec";
 
 const ConnectionSchema = z.object({
@@ -28,12 +28,12 @@ export const deployRoute: FastifyPluginAsync = async (app) => {
     }
     const view = parsedView.data;
 
-    // Generate SQL — may throw UnsupportedFieldError (C1) for nested fields
+    // Generate SQL — may throw UnsupportedFieldError (C1) or MissingLinkError for nested fields
     let sql: string;
     try {
       sql = emitSqlJson(view);
     } catch (e) {
-      if (e instanceof UnsupportedFieldError) {
+      if (e instanceof UnsupportedFieldError || e instanceof MissingLinkError) {
         return reply.code(422).send({ error: "unsupported_view", message: e.message });
       }
       throw e;
