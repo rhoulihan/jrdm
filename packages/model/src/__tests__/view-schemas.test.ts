@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { DualityViewSchema, type DualityView } from "../schemas";
+import { DualityViewSchema, type DualityView, RelationshipSchema } from "../schemas";
 
 const minimalView: DualityView = {
   name: "orders_dv",
@@ -131,6 +131,17 @@ describe("DualityViewSchema", () => {
       };
       expect(DualityViewSchema.safeParse(v).success).toBe(true);
     }
+  });
+
+  it("RelationshipSchema accepts a derived 1:N relationship", () => {
+    expect(
+      RelationshipSchema.safeParse({
+        name: "fk",
+        from: { schema: "app", table: "orders", columns: ["customer_id"] },
+        to: { schema: "app", table: "customers", columns: ["customer_id"] },
+        cardinality: "1:N",
+      }).success,
+    ).toBe(true);
   });
 
   it("I1: a static type-level assertion that DualityView nested fields carry permissions", () => {

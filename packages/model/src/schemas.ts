@@ -121,3 +121,23 @@ export const DualityViewSchema = z
   });
 
 export type DualityView = z.infer<typeof DualityViewSchema>;
+
+export const CardinalitySchema = z.enum(["1:1", "1:N"]);
+export type Cardinality = z.infer<typeof CardinalitySchema>;
+
+export const RelationshipSchema = z.object({
+  name: z.string().min(1),
+  from: z.object({
+    schema: z.string().min(1),
+    table: z.string().min(1),
+    columns: z.array(z.string().min(1)).min(1),
+  }),
+  to: z.object({
+    schema: z.string().min(1),
+    table: z.string().min(1),
+    columns: z.array(z.string().min(1)).min(1),
+  }),
+  cardinality: CardinalitySchema,
+});
+
+export type Relationship = z.infer<typeof RelationshipSchema>;
