@@ -1,3 +1,4 @@
+// @tested-by: packages/model/src/__tests__/schemas.test.ts
 export const SUPPORTED_TYPES = [
   "JSON",
   "BLOB",

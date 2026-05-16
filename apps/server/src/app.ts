@@ -1,3 +1,4 @@
+// @tested-by: apps/server/src/__tests__/health.test.ts
 import Fastify from "fastify";
 import cors from "@fastify/cors";
 import { healthRoute } from "./routes/health";
