@@ -31,4 +31,10 @@ describe("DiagramPane", () => {
     render(<DiagramPane />);
     expect(screen.getByTestId("diagram-canvas")).toBeInTheDocument();
   });
+
+  it("registers the entity node type and renders entity names", () => {
+    useJrdmStore.getState().setImport({ project, relationships: [], issues: [] });
+    render(<DiagramPane />);
+    expect(screen.getByText("orders")).toBeInTheDocument();
+  });
 });
