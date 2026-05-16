@@ -1,6 +1,6 @@
 // covers: packages/model/src/types.ts (via ColumnSchema which uses SUPPORTED_TYPES)
 import { describe, it, expect } from "vitest";
-import { ColumnSchema, EntitySchema, type Entity } from "../schemas";
+import { ColumnSchema, EntitySchema, ForeignKeySchema, type Entity } from "../schemas";
 
 describe("ColumnSchema", () => {
   it("accepts a minimal valid column", () => {
@@ -82,5 +82,74 @@ describe("EntitySchema", () => {
       primaryKey: ["order_id", "order_datetime"],
     };
     expect(EntitySchema.safeParse(composite).success).toBe(true);
+  });
+});
+
+describe("ForeignKeySchema", () => {
+  it("accepts a valid single-column FK", () => {
+    const fk = {
+      name: "fk_orders_customer",
+      columns: ["customer_id"],
+      references: { schema: "app", table: "customers", columns: ["customer_id"] },
+    };
+    expect(ForeignKeySchema.safeParse(fk).success).toBe(true);
+  });
+
+  it("requires equal local and referenced column counts", () => {
+    const fk = {
+      name: "fk_bad",
+      columns: ["a", "b"],
+      references: { schema: "app", table: "t", columns: ["a"] },
+    };
+    expect(ForeignKeySchema.safeParse(fk).success).toBe(false);
+  });
+
+  it("requires at least one column", () => {
+    const fk = {
+      name: "fk_empty",
+      columns: [],
+      references: { schema: "app", table: "t", columns: [] },
+    };
+    expect(ForeignKeySchema.safeParse(fk).success).toBe(false);
+  });
+});
+
+describe("EntitySchema with foreignKeys", () => {
+  const base = {
+    name: "orders",
+    schema: "app",
+    columns: [
+      { name: "order_id", type: "NUMBER", nullable: false },
+      { name: "customer_id", type: "NUMBER", nullable: false },
+    ],
+    primaryKey: ["order_id"],
+  };
+
+  it("accepts an entity whose FK columns exist", () => {
+    const e = {
+      ...base,
+      foreignKeys: [
+        {
+          name: "fk_orders_customer",
+          columns: ["customer_id"],
+          references: { schema: "app", table: "customers", columns: ["customer_id"] },
+        },
+      ],
+    };
+    expect(EntitySchema.safeParse(e).success).toBe(true);
+  });
+
+  it("rejects an entity whose FK references a non-existent local column", () => {
+    const e = {
+      ...base,
+      foreignKeys: [
+        {
+          name: "fk_bad",
+          columns: ["does_not_exist"],
+          references: { schema: "app", table: "customers", columns: ["customer_id"] },
+        },
+      ],
+    };
+    expect(EntitySchema.safeParse(e).success).toBe(false);
   });
 });
