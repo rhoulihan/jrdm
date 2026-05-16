@@ -1,3 +1,4 @@
+// @tested-by: packages/model/src/__tests__/view-schemas.test.ts
 import { z } from "zod";
 import { SUPPORTED_TYPES } from "./types";
 
@@ -29,13 +30,17 @@ export const EntitySchema = z
 export type Entity = z.infer<typeof EntitySchema>;
 export type Column = z.infer<typeof ColumnSchema>;
 
-const PermissionsSchema = z.object({
+export const PermissionsSchema = z.object({
   insert: z.boolean(),
   update: z.boolean(),
   delete: z.boolean(),
 });
 
-const EtagPolicySchema = z.enum(["check", "nocheck"]);
+export const EtagPolicySchema = z.enum(["check", "nocheck"]);
+
+export type Permissions = z.infer<typeof PermissionsSchema>;
+export type EtagPolicy = z.infer<typeof EtagPolicySchema>;
+export type CreateMode = "create" | "orReplace" | "ifNotExists";
 
 const ScalarFieldSchema = z.object({
   key: z.string().min(1),
@@ -44,20 +49,29 @@ const ScalarFieldSchema = z.object({
   noupdate: z.boolean().optional(),
 });
 
-type RawField =
-  | z.infer<typeof ScalarFieldSchema>
-  | { key: string; kind: "object" | "unnest" | "array"; table: string; fields: RawField[] };
+const NestedFieldSchema = z.object({
+  key: z.string().min(1),
+  kind: z.enum(["object", "unnest", "array"]),
+  table: z.string().min(1),
+  permissions: PermissionsSchema.optional(),
+  etag: EtagPolicySchema.optional(),
+  link: z.array(z.string()).optional(),
+  // fields is added via intersection after AnyFieldSchema is defined
+});
 
-const AnyFieldSchema: z.ZodType<RawField> = z.lazy(() =>
+// Exported field types derived purely from Zod inference
+export type ScalarField = z.infer<typeof ScalarFieldSchema>;
+export type NestedField = z.infer<typeof NestedFieldSchema> & { fields: AnyField[] };
+// ObjectField and ArrayField are discriminated subsets of NestedField
+export type ObjectField = Omit<NestedField, "kind"> & { kind: "object" | "unnest" };
+export type ArrayField = Omit<NestedField, "kind"> & { kind: "array" };
+export type AnyField = ScalarField | NestedField;
+
+// Recursive Zod schema typed against AnyField
+const AnyFieldSchema: z.ZodType<AnyField> = z.lazy(() =>
   z.union([
     ScalarFieldSchema,
-    z.object({
-      key: z.string().min(1),
-      kind: z.enum(["object", "unnest", "array"]),
-      table: z.string().min(1),
-      permissions: PermissionsSchema.optional(),
-      etag: EtagPolicySchema.optional(),
-      link: z.array(z.string()).optional(),
+    NestedFieldSchema.extend({
       fields: z.array(AnyFieldSchema).min(1),
     }),
   ]),
