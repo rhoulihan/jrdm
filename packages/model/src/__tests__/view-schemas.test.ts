@@ -101,6 +101,38 @@ describe("DualityViewSchema", () => {
     }
   });
 
+  it("I3: rejects createMode 'ifNotExists' (no such Oracle DDL form)", () => {
+    const v = {
+      name: "v",
+      schema: "s",
+      createMode: "ifNotExists",
+      root: {
+        table: "t",
+        permissions: { insert: false, update: false, delete: false },
+        etag: "check",
+      },
+      fields: [{ key: "_id", source: "t.id" }],
+    };
+    expect(DualityViewSchema.safeParse(v).success).toBe(false);
+  });
+
+  it("still accepts create and orReplace", () => {
+    for (const createMode of ["create", "orReplace"] as const) {
+      const v = {
+        name: "v",
+        schema: "s",
+        createMode,
+        root: {
+          table: "t",
+          permissions: { insert: false, update: false, delete: false },
+          etag: "check",
+        },
+        fields: [{ key: "_id", source: "t.id" }],
+      };
+      expect(DualityViewSchema.safeParse(v).success).toBe(true);
+    }
+  });
+
   it("I1: a static type-level assertion that DualityView nested fields carry permissions", () => {
     // This is a compile-time guarantee; if the inferred type lacks `permissions`
     // on the array variant, `pnpm typecheck` fails.
