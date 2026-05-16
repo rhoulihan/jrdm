@@ -195,6 +195,8 @@ These hold for every milestone and are checked at the end of each:
 - React Flow performance with large schemas — benchmark with a 500-entity fixture early.
 - Oracle 26ai constraint metadata exposed differently in `USER_*` vs `ALL_*` views — pin to `USER_*` for the user-owned schema, document the limitation.
 
+> Carry-forward cleared in v0.2a: I3 (`ifNotExists` invalid DDL) removed; I2 (validator test-theater) replaced with real relationship/project rules.
+
 ---
 
 ## v0.3 — Document Editor + GraphQL Emitter (Weeks 5–6)

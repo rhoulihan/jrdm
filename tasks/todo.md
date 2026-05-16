@@ -49,10 +49,21 @@ Detailed plan: [`docs/plans/2026-05-15-jrdm-v0.1-spike.md`](../docs/plans/2026-0
 
 ## v0.2 — ERD Designer + Oracle Importer (Weeks 3–4)
 
-- [ ] Draft `docs/plans/<date>-jrdm-v0.2-erd-and-importer.md`
-- [ ] Rick reviews v0.2 plan
-- [ ] Execute v0.2 tasks (TBD in plan)
-- [ ] v0.2 DoD: ERD canvas usable, Oracle reverse-engineering of 50-table fixture in ≤ 5s
+### v0.2a — Model relationships + Oracle importer (headless) — DONE
+
+- [x] I3 fix — drop invalid `ifNotExists` createMode
+- [x] Model — ForeignKey, Relationship, deriveRelationships, Project + serde
+- [x] Validator — honest rules + validateRelationships/validateProject (closes I2)
+- [x] `@jrdm/importer-oracle` — dictionary SQL, mapRowsToEntities, classifyCardinality, importSchema
+- [x] Importer Testcontainers integration (live Oracle reverse-engineering)
+- [x] Server — `POST /api/import/oracle` + unit + integration tests
+- [x] CI — importer-oracle integration test enforced
+
+### v0.2b — React Flow ERD canvas + inspector + connection UI — NEXT
+
+- [ ] Draft `docs/plans/<date>-jrdm-v0.2b-erd-canvas.md`
+- [ ] Rick reviews v0.2b plan
+- [ ] Execute v0.2b
 
 ## v0.3 — Document Editor + GraphQL Emitter (Weeks 5–6)
 
