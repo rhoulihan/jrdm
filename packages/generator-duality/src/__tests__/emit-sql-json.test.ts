@@ -435,3 +435,64 @@ describe("emitSqlJson — root etag + replication clause", () => {
     expect(emitSqlJson(v("disable"))).toContain("DISABLE LOGICAL REPLICATION");
   });
 });
+
+const departmentsView: DualityView = {
+  name: "departments_dv",
+  schema: "hr",
+  createMode: "orReplace",
+  root: { table: "dept", permissions: { insert: true, update: true, delete: true }, etag: "check" },
+  fields: [
+    { key: "_id", source: "dept.deptno" },
+    { key: "departmentName", source: "dept.dname" },
+    { key: "location", source: "dept.loc" },
+    {
+      key: "employees",
+      kind: "array",
+      table: "emp",
+      permissions: { insert: true, update: true, delete: true },
+      etag: "check",
+      link: ["deptno"],
+      fields: [
+        { key: "employeeNumber", source: "emp.empno" },
+        { key: "employeeName", source: "emp.ename" },
+        { key: "job", source: "emp.job" },
+        { key: "salary", source: "emp.sal" },
+      ],
+    },
+  ],
+};
+
+const employeeView: DualityView = {
+  name: "employee_dv",
+  schema: "hr",
+  createMode: "orReplace",
+  root: { table: "emp", permissions: { insert: true, update: true, delete: true }, etag: "check" },
+  fields: [
+    { key: "_id", source: "emp.empno" },
+    { key: "employeeName", source: "emp.ename" },
+    { key: "job", source: "emp.job" },
+    { key: "salary", source: "emp.sal" },
+    {
+      key: "dept",
+      kind: "unnest",
+      table: "dept",
+      permissions: { insert: false, update: true, delete: false },
+      etag: "check",
+      link: ["deptno"],
+      fields: [
+        { key: "departmentNumber", source: "dept.deptno" },
+        { key: "departmentName", source: "dept.dname" },
+        { key: "location", source: "dept.loc" },
+      ],
+    },
+  ],
+};
+
+describe("emitSqlJson — golden fixtures", () => {
+  it("departments_dv (nested array) matches golden byte-for-byte", () => {
+    expect(emitSqlJson(departmentsView).trim()).toBe(golden("departments_dv.sql"));
+  });
+  it("employee_dv (unnest 1:1) matches golden byte-for-byte", () => {
+    expect(emitSqlJson(employeeView).trim()).toBe(golden("employee_dv.sql"));
+  });
+});
