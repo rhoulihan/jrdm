@@ -42,7 +42,7 @@ Detailed plan: [`docs/plans/2026-05-15-jrdm-v0.1-spike.md`](../docs/plans/2026-0
 
 **v0.1 Definition of Done:**
 
-- [x] CI green; pre-commit gate proven; coverage ≥ 90/85 on packages (100% on model/validator/generator-duality)
+- [x] CI green; pre-commit gate proven (bypass verified closed at real git level); coverage ≥ 90/85 on `packages/*` (100% on model/validator/generator-duality/exec), ≥ 70/65 on `apps/*` per roadmap. The `/api/deploy` live branch is covered by a real Oracle Testcontainers integration test (green in CI), intentionally not oracledb-mocked unit tests — see `tasks/lessons.md`.
 - [x] Docker: `docker compose -f tools/docker/docker-compose.yml up` serves the API at <http://localhost:3737> (UI shell in v0.2)
 - [x] End-to-end smoke: YAML → generated DDL → deploy to live Oracle 26ai container → sample query returns document with `_metadata.etag` (verified locally AND in CI integration job)
 - [~] Known carry-forward: container/Trivy CI job non-blocking pending dep-hygiene pass (tracked in `tasks/lessons.md`, scheduled v0.2)
