@@ -1,12 +1,26 @@
-import type { DualityView, Permissions, ScalarField } from "@jrdm/model";
+import type { AnyField, DualityView, Permissions, ScalarField } from "@jrdm/model";
+
+export class UnsupportedFieldError extends Error {
+  constructor(key: string, kind: string) {
+    super(
+      `UnsupportedFieldError: field "${key}" (kind "${kind}") is not supported by the SQL/JSON emitter yet` +
+        ` (v0.1 is scalar-only; nested emission lands in v0.3)`,
+    );
+    this.name = "UnsupportedFieldError";
+  }
+}
+
+function routeField(f: AnyField, rootAlias: string): string {
+  if ("kind" in f) {
+    throw new UnsupportedFieldError(f.key, f.kind);
+  }
+  return emitScalar(f, rootAlias);
+}
 
 export function emitSqlJson(view: DualityView): string {
   const create = createPrefix(view.createMode);
   const rootAlias = aliasFor(view.root.table);
-  const fields = view.fields
-    .filter((f): f is ScalarField => "source" in f)
-    .map((f) => emitScalar(f, rootAlias))
-    .join(",\n  ");
+  const fields = view.fields.map((f) => routeField(f, rootAlias)).join(",\n  ");
   const rootDml = emitDml(view.root.permissions);
 
   return [
