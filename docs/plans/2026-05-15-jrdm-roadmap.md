@@ -196,6 +196,8 @@ These hold for every milestone and are checked at the end of each:
 - Oracle 26ai constraint metadata exposed differently in `USER_*` vs `ALL_*` views — pin to `USER_*` for the user-owned schema, document the limitation.
 
 > Carry-forward cleared in v0.2a: I3 (`ifNotExists` invalid DDL) removed; I2 (validator test-theater) replaced with real relationship/project rules.
+>
+> v0.2b complete: visual ERD designer (React Flow) over the v0.2a importer. v0.2a milestone-review Important items closed — DraftProject type (no more Project over-promise on PK-less import) and loud UNMAPPED_TYPE warning (no more silent VARCHAR2 fallback). @jrdm/web now has a real Vitest+RTL unit suite in the CI `unit` job; the import golden path is covered by an API-mocked Playwright e2e (the real Oracle path stays covered by the server integration test).
 
 ---
 
