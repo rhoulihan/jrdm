@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import { Inspector } from "./Inspector";
 import { useJrdmStore } from "../state/store";
 import type { DraftProject } from "@jrdm/model";
@@ -41,8 +41,9 @@ describe("Inspector", () => {
     useJrdmStore.getState().selectEntity("app.orders");
     render(<Inspector />);
     expect(screen.getByText("app.orders")).toBeInTheDocument();
-    expect(screen.getByText(/order_id/)).toBeInTheDocument();
-    expect(screen.getByText(/NUMBER/)).toBeInTheDocument();
+    const columnsTable = screen.getByRole("table");
+    expect(within(columnsTable).getByText("order_id")).toBeInTheDocument();
+    expect(within(columnsTable).getByText(/NUMBER/)).toBeInTheDocument();
     expect(screen.getByTestId("inspector-pk")).toHaveTextContent("order_id");
     expect(screen.getByTestId("inspector-fk")).toHaveTextContent("fk_o_c");
   });
