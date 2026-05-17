@@ -27,6 +27,25 @@ describe("buildApp — route registration", () => {
     expect(res.statusCode).not.toBe(404);
     await app.close();
   });
+
+  it("registers /api/document/read and /api/document/write (not 404)", async () => {
+    const app = await buildApp();
+    const readRes = await app.inject({
+      method: "POST",
+      url: "/api/document/read",
+      payload: {},
+    });
+    // Route is registered — invalid body returns 400, not 404
+    expect(readRes.statusCode).not.toBe(404);
+
+    const writeRes = await app.inject({
+      method: "POST",
+      url: "/api/document/write",
+      payload: {},
+    });
+    expect(writeRes.statusCode).not.toBe(404);
+    await app.close();
+  });
 });
 
 describe("POST /api/import/oracle — validation", () => {
