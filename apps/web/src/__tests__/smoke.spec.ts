@@ -81,5 +81,5 @@ test("import → ERD canvas + inspector + issues (API mocked)", async ({ page })
 
   // Selecting an entity populates the inspector
   await page.getByText("orders").click();
-  await expect(page.getByText("app.orders")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "app.orders" })).toBeVisible();
 });
