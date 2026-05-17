@@ -30,7 +30,7 @@ describe("documentModel factories", () => {
       source: "orders.order_status",
     });
   });
-  it("nestedField builds an array node with empty fields and link", () => {
+  it("nestedField builds an array node with empty fields", () => {
     expect(nestedField("items", "array", "order_items")).toEqual({
       key: "items",
       kind: "array",

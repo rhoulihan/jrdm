@@ -81,18 +81,28 @@ test("nested authoring: + array → drop column into it → nested child + DDL",
     }),
   );
   let lastViewFieldCount = 0;
+  let lastPostedViewHasNestedField = false;
   await page.route("**/api/ddl/preview", async (route) => {
     const body = route.request().postDataJSON() as {
-      view: { fields: unknown[] };
+      view: { fields: Array<{ kind?: string; fields?: unknown[] }> };
       syntax?: string;
     };
     lastViewFieldCount = body.view.fields.length;
+    const nestedFields = body.view.fields.filter(
+      (f) => f.kind !== undefined && Array.isArray(f.fields),
+    );
+    lastPostedViewHasNestedField = nestedFields.length > 0;
+    // Derive DDL that encodes the nested structure so the assertion is NOT a tautology:
+    // the returned SQL mentions each nested field's kind, proving nested authoring was posted.
+    const nestedClause = nestedFields.map((f) => `NESTED PATH ${f.kind ?? "array"}`).join(" ");
+    const sql =
+      nestedFields.length > 0
+        ? `CREATE OR REPLACE JSON RELATIONAL DUALITY VIEW app.orders_dv AS SELECT * FROM orders WITH ${nestedClause}`
+        : "CREATE OR REPLACE JSON RELATIONAL DUALITY VIEW app.orders_dv AS";
     await route.fulfill({
       status: 200,
       contentType: "application/json",
-      body: JSON.stringify({
-        sql: "CREATE OR REPLACE JSON RELATIONAL DUALITY VIEW app.orders_dv AS",
-      }),
+      body: JSON.stringify({ sql }),
     });
   });
 
@@ -129,8 +139,11 @@ test("nested authoring: + array → drop column into it → nested child + DDL",
 
   // nested child rendered + DDL preview re-requested with the bigger view
   await expect(page.getByTestId("field-1.0")).toBeVisible();
-  await expect(page.getByTestId("ddl-output")).toContainText(
-    "CREATE OR REPLACE JSON RELATIONAL DUALITY VIEW",
-  );
+  // The DDL output must contain "NESTED PATH array" — only reachable when the
+  // posted view actually contained a nested field (kind=array + fields=[]).
+  // If nested authoring were broken (toolbar adds nothing / drop is a no-op),
+  // the posted view would have no nested fields and this assertion would fail.
+  await expect(page.getByTestId("ddl-output")).toContainText("NESTED PATH array");
   expect(lastViewFieldCount).toBeGreaterThanOrEqual(2);
+  expect(lastPostedViewHasNestedField).toBe(true);
 });
