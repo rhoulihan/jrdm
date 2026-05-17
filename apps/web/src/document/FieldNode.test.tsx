@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from "vitest";
-import { render, screen, within } from "@testing-library/react";
+import { render, screen, within, fireEvent } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { FieldNode } from "./FieldNode";
 import { useJrdmStore } from "../state/store";
@@ -44,4 +44,58 @@ describe("FieldNode", () => {
     render(<FieldNode field={f} path={[1]} />);
     expect(screen.getByTestId("field-1")).toHaveAttribute("data-selected", "true");
   });
+});
+
+it("dropping a column onto a NESTED field appends a scalar into that field", () => {
+  useJrdmStore.getState().reset();
+  useJrdmStore.getState().setEditingView({
+    name: "v_dv",
+    schema: "app",
+    createMode: "orReplace",
+    root: {
+      table: "orders",
+      permissions: { insert: false, update: false, delete: false },
+      etag: "check",
+    },
+    fields: [
+      { key: "_id", source: "orders.id" },
+      { key: "items", kind: "array", table: "order_items", fields: [] },
+    ],
+  });
+  const f = useJrdmStore.getState().editingView!.fields[1]!;
+  render(<FieldNode field={f} path={[1]} />);
+  const node = screen.getByTestId("field-1");
+  const payload = JSON.stringify({ table: "order_items", column: "quantity" });
+  fireEvent.drop(node, {
+    dataTransfer: { getData: (t: string) => (t === "application/x-jrdm-column" ? payload : "") },
+  });
+  const items = useJrdmStore.getState().editingView!.fields[1];
+  expect(items && "fields" in items && items.fields).toEqual([
+    { key: "quantity", source: "order_items.quantity" },
+  ]);
+});
+
+it("dropping a column onto a SCALAR field does NOT mutate (only nested accept)", () => {
+  useJrdmStore.getState().reset();
+  useJrdmStore.getState().setEditingView({
+    name: "v_dv",
+    schema: "app",
+    createMode: "orReplace",
+    root: {
+      table: "orders",
+      permissions: { insert: false, update: false, delete: false },
+      etag: "check",
+    },
+    fields: [{ key: "_id", source: "orders.id" }],
+  });
+  const f = useJrdmStore.getState().editingView!.fields[0]!;
+  render(<FieldNode field={f} path={[0]} />);
+  const node = screen.getByTestId("field-0");
+  fireEvent.drop(node, {
+    dataTransfer: {
+      getData: (t: string) =>
+        t === "application/x-jrdm-column" ? JSON.stringify({ table: "x", column: "y" }) : "",
+    },
+  });
+  expect(useJrdmStore.getState().editingView!.fields).toHaveLength(1);
 });
