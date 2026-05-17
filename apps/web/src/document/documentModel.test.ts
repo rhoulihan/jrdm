@@ -6,6 +6,8 @@ import {
   removeField,
   patchField,
   getField,
+  resolveAddTargetPath,
+  flattenPaths,
 } from "./documentModel";
 import type { DualityView } from "@jrdm/model";
 
@@ -81,5 +83,39 @@ describe("documentModel tree ops (immutable)", () => {
     const next = removeField(v, [1, 0]);
     const items = next.fields[1];
     expect(items && "fields" in items && items.fields).toEqual([]);
+  });
+});
+
+describe("resolveAddTargetPath", () => {
+  const withNested = addField(base, [], nestedField("items", "array", "order_items"));
+
+  it("returns [] (root) when nothing is selected", () => {
+    expect(resolveAddTargetPath(withNested, null)).toEqual([]);
+  });
+
+  it("returns [] (root) when a SCALAR field is selected", () => {
+    expect(resolveAddTargetPath(withNested, [0])).toEqual([]); // _id is scalar
+  });
+
+  it("returns the selected path when a NESTED field is selected (add as its child)", () => {
+    expect(resolveAddTargetPath(withNested, [1])).toEqual([1]); // items is nested
+  });
+
+  it("returns [] when the selected path no longer resolves", () => {
+    expect(resolveAddTargetPath(withNested, [9])).toEqual([]);
+  });
+});
+
+describe("flattenPaths", () => {
+  it("returns [] for a view with no fields beyond required (still lists them)", () => {
+    expect(flattenPaths(base)).toEqual([[0]]);
+  });
+
+  it("returns depth-first preorder paths including nested children", () => {
+    let v = addField(base, [], nestedField("items", "array", "order_items"));
+    v = addField(v, [1], scalarField("qty", "order_items", "quantity"));
+    v = addField(v, [], scalarField("status", "orders", "order_status"));
+    // fields: [_id(0), items(1) -> [qty(1.0)], status(2)]
+    expect(flattenPaths(v)).toEqual([[0], [1], [1, 0], [2]]);
   });
 });
