@@ -2,11 +2,22 @@ import type { DragEvent } from "react";
 import { useJrdmStore } from "../state/store";
 import { FieldNode } from "./FieldNode";
 import { DRAG_MIME, parseDragPayload } from "./dropTarget";
-import { scalarField, addField } from "./documentModel";
+import {
+  scalarField,
+  addField,
+  nestedField,
+  getField,
+  resolveAddTargetPath,
+} from "./documentModel";
+import type { NestedField } from "@jrdm/model";
+
+const KINDS = ["object", "unnest", "array"] as const;
 
 export function DocumentTree() {
   const view = useJrdmStore((s) => s.editingView);
+  const selectedFieldPath = useJrdmStore((s) => s.selectedFieldPath);
   const setEditingView = useJrdmStore((s) => s.setEditingView);
+  const selectField = useJrdmStore((s) => s.selectField);
 
   function onDrop(e: DragEvent<HTMLDivElement>) {
     e.preventDefault();
@@ -14,6 +25,16 @@ export function DocumentTree() {
     const drag = parseDragPayload(raw);
     if (!drag || !view) return;
     setEditingView(addField(view, [], scalarField(drag.column, drag.table, drag.column)));
+  }
+
+  function addNested(kind: NestedField["kind"]) {
+    if (!view) return;
+    const target = resolveAddTargetPath(view, selectedFieldPath);
+    const siblings =
+      target.length === 0 ? view.fields : (getField(view, target) as NestedField).fields;
+    const newPath = [...target, siblings.length];
+    setEditingView(addField(view, target, nestedField(`new_${kind}`, kind, view.root.table)));
+    selectField(newPath);
   }
 
   if (!view) {
@@ -36,6 +57,18 @@ export function DocumentTree() {
           {view.schema}.{view.name}
         </div>
         <div className="text-jrdm-muted">root: {view.root.table}</div>
+      </div>
+      <div className="flex gap-2 mb-2" data-testid="doctree-toolbar">
+        {KINDS.map((k) => (
+          <button
+            key={k}
+            type="button"
+            onClick={() => addNested(k)}
+            className="text-xs border border-jrdm-border rounded px-2 py-0.5 bg-surface-alt"
+          >
+            + {k}
+          </button>
+        ))}
       </div>
       <div>
         {view.fields.map((f, i) => (
