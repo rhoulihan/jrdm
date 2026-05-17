@@ -79,6 +79,39 @@ it("the field tree container is role=tree", () => {
   expect(screen.getByRole("tree")).toBeInTheDocument();
 });
 
+it("drop on a nested FieldNode adds the child into that node only (stopPropagation prevents root double-add)", async () => {
+  // Arrange: view with one scalar at root and one nested array at root
+  useJrdmStore.getState().reset();
+  useJrdmStore.getState().startNewView("orders");
+  const store = useJrdmStore.getState();
+  const { addField, nestedField } = await import("./documentModel");
+  store.setEditingView(
+    addField(store.editingView!, [], nestedField("items", "array", "order_items")),
+  );
+  // view.fields: [{ key: "_id", source: "orders.order_id" }, { key: "items", kind: "array", ... fields: [] }]
+  render(<DocumentTree />);
+
+  // Act: drop a column payload onto the nested FieldNode (field-1)
+  const nestedNode = screen.getByTestId("field-1");
+  const payload = JSON.stringify({ table: "order_items", column: "qty" });
+  fireEvent.drop(nestedNode, {
+    dataTransfer: { getData: (t: string) => (t === "application/x-jrdm-column" ? payload : "") },
+  });
+
+  // Assert: the nested field has exactly 1 child
+  const updatedView = useJrdmStore.getState().editingView!;
+  const nestedField_ = updatedView.fields[1];
+  expect(nestedField_ && "fields" in nestedField_ && nestedField_.fields).toHaveLength(1);
+  expect(nestedField_ && "fields" in nestedField_ && nestedField_.fields[0]).toEqual({
+    key: "qty",
+    source: "order_items.qty",
+  });
+
+  // Assert: root still has exactly 2 fields (the scalar _id + the nested items) — no double-add at root
+  // If stopPropagation were missing, the root onDrop would also fire and add a third scalar at root.
+  expect(updatedView.fields).toHaveLength(2);
+});
+
 it("ArrowDown selects the first field when none selected, then the next", () => {
   useJrdmStore.getState().startNewView("orders"); // fields: [_id]
   const store = useJrdmStore.getState();
