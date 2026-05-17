@@ -74,7 +74,7 @@ Detailed plan: [`docs/plans/2026-05-15-jrdm-v0.1-spike.md`](../docs/plans/2026-0
 - [x] Golden-path Playwright e2e (API mocked)
 - [x] 50-entity layout perf guard
 
-### v0.3 — Document Editor + GraphQL Emitter (Weeks 5–6) — NEXT
+### v0.3 — Document Editor + GraphQL Emitter (Weeks 5–6) — DONE
 
 ## v0.3 — Document Editor + GraphQL Emitter (Weeks 5–6)
 
@@ -93,12 +93,21 @@ Detailed plan: [`docs/plans/2026-05-15-jrdm-v0.1-spike.md`](../docs/plans/2026-0
 - [x] /api/ddl/preview syntax selector (sql|graphql) + 422
 - [x] generator emit perf guard
 
-### v0.3b — Document editor UI + DDL pane toggle — NEXT
+### v0.3b — Document editor UI + DDL pane toggle — DONE
 
-- [ ] Draft v0.3 plan
-- [ ] Rick reviews
-- [ ] Execute
-- [ ] v0.3 DoD: every duality view annotation exposed in UI; GraphQL ⇄ SQL/JSON round-trip property test green; DDL regen ≤ 50ms p99 on 200-entity project
+- [x] IssuesPanel.focus carried-debt cleanup
+- [x] Store duality-view authoring state
+- [x] fetchDdlPreview client + useDdlPreview hook
+- [x] documentModel pure tree ops
+- [x] FieldNode + DocumentTree
+- [x] Native drag-drop: EntityNode columns → DocumentTree
+- [x] FieldInspector + ViewInspector
+- [x] SyntaxToggle + DdlPane
+- [x] ERD/Design mode shell + ContextInspector
+- [x] Authoring golden-path e2e
+- [x] DDL-pane perf guard
+
+### v0.4 — Live Oracle Preview + ETag Round-Trip (Weeks 7–8) — NEXT
 
 ## v0.4 — Live Oracle Preview + ETag Round-Trip (Weeks 7–8)
 
