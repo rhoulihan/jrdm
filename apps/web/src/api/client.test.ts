@@ -120,4 +120,15 @@ describe("fetchDdlPreview", () => {
     );
     await expect(fetchDdlPreview(view, "sql")).rejects.toMatchObject({ status: 400 });
   });
+
+  it("fetchDdlPreview sends {view,syntax} body", async () => {
+    const fetchMock = vi.fn(() =>
+      Promise.resolve(new Response(JSON.stringify({ sql: "X" }), { status: 200 })),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+    await fetchDdlPreview(view, "sql");
+    const calls = (fetchMock as unknown as { mock: { calls: unknown[][] } }).mock.calls;
+    const sent = JSON.parse((calls[0]![1] as { body: string }).body) as { syntax: string };
+    expect(sent.syntax).toBe("sql");
+  });
 });
