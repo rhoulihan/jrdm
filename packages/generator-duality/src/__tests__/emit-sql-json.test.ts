@@ -119,7 +119,7 @@ describe("C1: nested fields are a loud error, never silently dropped", () => {
         table: "order_items",
         permissions: { insert: true, update: true, delete: false },
         etag: "check",
-        link: ["order_id"],
+        link: { from: ["order_id"], to: ["order_id"] },
         fields: [{ key: "itemId", source: "order_items.line_item_id" }],
       },
     ],
@@ -284,14 +284,14 @@ describe("emitSqlJson — nested object & unnest (1:1)", () => {
       table: "department",
       permissions: { insert: false, update: true, delete: false },
       etag: "check",
-      link: ["deptno"],
+      link: { from: ["deptno"], to: ["dept_fk"] },
       fields: [{ key: "deptName", source: "department.dname" }],
     }) as DualityView;
     const sql = emitSqlJson(view);
     expect(sql).toContain("'dept' : ( SELECT JSON {");
     expect(sql).toContain("'deptName' : d.dname");
     expect(sql).toContain("FROM department d WITH UPDATE");
-    expect(sql).toContain("WHERE d.deptno = e.deptno )");
+    expect(sql).toContain("WHERE d.dept_fk = e.deptno )");
   });
 
   it("emits UNNEST (no key prefix) for kind:unnest", () => {
@@ -300,7 +300,7 @@ describe("emitSqlJson — nested object & unnest (1:1)", () => {
       kind: "unnest",
       table: "department",
       etag: "check",
-      link: ["deptno"],
+      link: { from: ["deptno"], to: ["deptno"] },
       fields: [{ key: "deptName", source: "department.dname" }],
     }) as DualityView;
     const sql = emitSqlJson(view);
@@ -342,7 +342,7 @@ describe("emitSqlJson — nested array (1:N) and array-of-array (N:M)", () => {
           table: "driver",
           permissions: { insert: true, update: true, delete: false },
           etag: "check",
-          link: ["team_id"],
+          link: { from: ["team_id"], to: ["fk_team"] },
           fields: [
             { key: "driverId", source: "driver.driver_id" },
             { key: "name", source: "driver.name", etag: "nocheck" },
@@ -355,7 +355,7 @@ describe("emitSqlJson — nested array (1:N) and array-of-array (N:M)", () => {
     expect(sql).toContain("'driverId' : d.driver_id");
     expect(sql).toContain("'name' : d.name WITH NOCHECK");
     expect(sql).toContain("FROM driver d WITH INSERT UPDATE");
-    expect(sql).toContain("WHERE d.team_id = t.team_id ]");
+    expect(sql).toContain("WHERE d.fk_team = t.team_id ]");
   });
 
   it("supports an array nested inside an array (N:M via junction modeled as array-of-array)", () => {
@@ -376,7 +376,7 @@ describe("emitSqlJson — nested array (1:N) and array-of-array (N:M)", () => {
           table: "driver_race_map",
           permissions: { insert: true, update: true, delete: true },
           etag: "check",
-          link: ["race_id"],
+          link: { from: ["race_id"], to: ["race_id"] },
           fields: [
             { key: "pos", source: "driver_race_map.position" },
             {
@@ -384,7 +384,7 @@ describe("emitSqlJson — nested array (1:N) and array-of-array (N:M)", () => {
               kind: "object",
               table: "driver",
               etag: "check",
-              link: ["driver_id"],
+              link: { from: ["driver_id"], to: ["driver_id"] },
               fields: [{ key: "name", source: "driver.name" }],
             },
           ],
@@ -398,6 +398,33 @@ describe("emitSqlJson — nested array (1:N) and array-of-array (N:M)", () => {
     expect(sql).toContain("FROM driver_race_map drm");
     expect(sql).toContain("FROM driver d");
     expect(sql).toContain("FROM race r");
+  });
+});
+
+describe("I3: asymmetric link join predicate", () => {
+  it("emits asymmetric join predicate child.to = parent.from", () => {
+    const sql = emitSqlJson({
+      name: "o_dv",
+      schema: "app",
+      createMode: "create",
+      root: {
+        table: "orders",
+        permissions: { insert: false, update: false, delete: false },
+        etag: "check",
+      },
+      fields: [
+        { key: "_id", source: "orders.id" },
+        {
+          key: "items",
+          kind: "array",
+          table: "order_items",
+          link: { from: ["id"], to: ["order_id"] },
+          fields: [{ key: "sku", source: "order_items.sku" }],
+        },
+      ],
+    });
+    // child alias . to-col = parent alias . from-col
+    expect(sql).toMatch(/\w+\.order_id = \w+\.id/);
   });
 });
 
@@ -451,7 +478,7 @@ const departmentsView: DualityView = {
       table: "emp",
       permissions: { insert: true, update: true, delete: true },
       etag: "check",
-      link: ["deptno"],
+      link: { from: ["deptno"], to: ["deptno"] },
       fields: [
         { key: "employeeNumber", source: "emp.empno" },
         { key: "employeeName", source: "emp.ename" },
@@ -478,7 +505,7 @@ const employeeView: DualityView = {
       table: "dept",
       permissions: { insert: false, update: true, delete: false },
       etag: "check",
-      link: ["deptno"],
+      link: { from: ["deptno"], to: ["deptno"] },
       fields: [
         { key: "departmentNumber", source: "dept.deptno" },
         { key: "departmentName", source: "dept.dname" },

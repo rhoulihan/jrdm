@@ -14,7 +14,7 @@ function wideDeep(depth: number, width: number, table: string): AnyField[] {
     table: `t${depth}`,
     permissions: { insert: true, update: true, delete: false },
     etag: "check",
-    link: ["pid"],
+    link: { from: ["pid"], to: ["pid"] },
     fields: wideDeep(depth - 1, width, `t${depth}`),
   };
   return [...scalars, child];

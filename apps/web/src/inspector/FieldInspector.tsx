@@ -72,16 +72,39 @@ export function FieldInspector() {
             />
           </label>
           <label className="flex flex-col gap-1">
-            Link (comma-separated columns)
+            Parent columns (link.from)
             <input
+              data-testid="link-from"
               className="border border-jrdm-border rounded px-2 py-1"
-              value={(field.link ?? []).join(",")}
+              value={(field.link?.from ?? []).join(",")}
               onChange={(e) =>
                 patch({
-                  link: e.target.value
-                    .split(",")
-                    .map((s) => s.trim())
-                    .filter(Boolean),
+                  link: {
+                    from: e.target.value
+                      .split(",")
+                      .map((s) => s.trim())
+                      .filter(Boolean),
+                    to: field.link?.to ?? [],
+                  },
+                })
+              }
+            />
+          </label>
+          <label className="flex flex-col gap-1">
+            Child columns (link.to)
+            <input
+              data-testid="link-to"
+              className="border border-jrdm-border rounded px-2 py-1"
+              value={(field.link?.to ?? []).join(",")}
+              onChange={(e) =>
+                patch({
+                  link: {
+                    from: field.link?.from ?? [],
+                    to: e.target.value
+                      .split(",")
+                      .map((s) => s.trim())
+                      .filter(Boolean),
+                  },
                 })
               }
             />

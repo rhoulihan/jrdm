@@ -7,7 +7,7 @@ export interface NormField {
   nocheck: boolean;
   noupdate: boolean;
   perms: { insert: boolean; update: boolean; delete: boolean };
-  link: string[];
+  link: { from: string[]; to: string[] };
   children: NormField[];
 }
 
@@ -82,13 +82,13 @@ function scanGql(body: string, _start: number): { fields: NormField[]; end: numb
     if (open) {
       const isUnnest = tail.includes("@unnest");
       const kind = isUnnest ? "unnest" : line.includes("[ {") ? "array" : "object";
-      const linkM = /@link\(to : \[([^\]]*)\]\)/.exec(tail);
-      const link = linkM
-        ? linkM[1]!
-            .split(",")
-            .map((s) => s.trim().replace(/"/g, ""))
-            .filter(Boolean)
-        : [];
+      const lm = /@link\(from : \[([^\]]*)\] to : \[([^\]]*)\]\)/.exec(tail);
+      const split = (s: string) =>
+        s
+          .split(",")
+          .map((x) => x.trim().replace(/"/g, ""))
+          .filter(Boolean);
+      const link = lm ? { from: split(lm[1]!), to: split(lm[2]!) } : { from: [], to: [] };
       // find matching close by brace depth
       let depth = 1;
       let j = i + 1;
@@ -127,7 +127,7 @@ function scanGql(body: string, _start: number): { fields: NormField[]; end: numb
         nocheck: tail.includes("@nocheck"),
         noupdate: tail.includes("@noupdate"),
         perms: { ...NO_PERMS },
-        link: [],
+        link: { from: [], to: [] },
         children: [],
       });
     }
@@ -194,7 +194,7 @@ function parseSqlFields(s: string): NormField[] {
         nocheck: /\bWITH NOCHECK\b/.test(sm[3] ?? ""),
         noupdate: /\bWITH NOUPDATE\b/.test(sm[3] ?? ""),
         perms: { ...NO_PERMS },
-        link: [],
+        link: { from: [], to: [] },
         children: [],
       });
     }
@@ -215,7 +215,8 @@ function parseSqlSub(
   const table = km ? km[3]! : "";
   const tail = km ? km[4]! : "";
   const where = km ? km[5]! : "";
-  const link = Array.from(where.matchAll(/\w+\.(\w+) = \w+\.\1/g)).map((m) => m[1]!);
+  const pairs = Array.from(where.matchAll(/\w+\.(\w+) = \w+\.(\w+)/g));
+  const link = { from: pairs.map((m) => m[2]!), to: pairs.map((m) => m[1]!) };
   return {
     // For unnest, SQL has no surrounding 'key' :; key is "" to match GraphQL normalizer
     key: key ?? km?.[1] ?? "",

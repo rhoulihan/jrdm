@@ -41,11 +41,13 @@ function emitField(f: AnyField, indent: string): string {
 }
 
 function emitNested(f: NestedField, indent: string): string {
-  if (!f.link || f.link.length === 0) throw new MissingLinkError(f.key);
+  if (!f.link || f.link.from.length === 0 || f.link.to.length === 0)
+    throw new MissingLinkError(f.key);
   const nodeAnns = anns(f.permissions);
   const unnest = f.kind === "unnest" ? " @unnest" : "";
   const nocheck = f.etag === "nocheck" ? " @nocheck" : "";
-  const link = ` @link(to : [${f.link.map((c) => `"${c}"`).join(", ")}])`;
+  const q = (cs: string[]) => cs.map((c) => `"${c}"`).join(", ");
+  const link = ` @link(from : [${q(f.link.from)}] to : [${q(f.link.to)}])`;
   const childIndent = indent + "  ";
   const body = f.fields.map((c) => childIndent + emitField(c, childIndent)).join("\n");
   const open = `${f.key} : ${f.table}${unnest}${nodeAnns}${nocheck}${link}`;

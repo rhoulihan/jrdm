@@ -74,13 +74,13 @@ describe("emitGraphql — nested fields", () => {
           kind: "object",
           table: "customers",
           permissions: { insert: false, update: true, delete: false },
-          link: ["customer_id"],
+          link: { from: ["id"], to: ["customer_id"] },
           fields: [{ key: "name", source: "customers.cust_name" }],
         },
       ],
     };
     const g = emitGraphql(view);
-    expect(g).toContain('customer : customers @update @link(to : ["customer_id"])');
+    expect(g).toContain('customer : customers @update @link(from : ["id"] to : ["customer_id"])');
     expect(g).toContain("name : cust_name");
   });
 
@@ -94,13 +94,15 @@ describe("emitGraphql — nested fields", () => {
           kind: "array",
           table: "order_items",
           permissions: { insert: true, update: true, delete: true },
-          link: ["order_id"],
+          link: { from: ["id"], to: ["order_id"] },
           fields: [{ key: "sku", source: "order_items.sku" }],
         },
       ],
     };
     const g = emitGraphql(view);
-    expect(g).toContain('items : order_items @insert @update @delete @link(to : ["order_id"]) [ {');
+    expect(g).toContain(
+      'items : order_items @insert @update @delete @link(from : ["id"] to : ["order_id"]) [ {',
+    );
     expect(g).toContain("sku : sku");
   });
 
@@ -113,13 +115,13 @@ describe("emitGraphql — nested fields", () => {
           key: "addr",
           kind: "unnest",
           table: "addresses",
-          link: ["address_id"],
+          link: { from: ["addr_id"], to: ["address_id"] },
           fields: [{ key: "city", source: "addresses.city" }],
         },
       ],
     };
     const g = emitGraphql(view);
-    expect(g).toContain('addr : addresses @unnest @link(to : ["address_id"])');
+    expect(g).toContain('addr : addresses @unnest @link(from : ["addr_id"] to : ["address_id"])');
     expect(g).toContain("city : city");
   });
 
@@ -131,7 +133,7 @@ describe("emitGraphql — nested fields", () => {
           key: "items",
           kind: "array",
           table: "order_items",
-          link: [],
+          link: { from: [], to: [] },
           fields: [{ key: "sku", source: "order_items.sku" }],
         },
       ],
@@ -159,7 +161,7 @@ describe("emitGraphql — nested", () => {
           table: "driver",
           permissions: { insert: true, update: true, delete: false },
           etag: "check",
-          link: ["team_id"],
+          link: { from: ["team_id"], to: ["fk_team"] },
           fields: [
             { key: "driverId", source: "driver.driver_id" },
             { key: "name", source: "driver.name", etag: "nocheck" },
@@ -168,7 +170,9 @@ describe("emitGraphql — nested", () => {
       ],
     };
     const g = emitGraphql(v);
-    expect(g).toContain('driver : driver @insert @update @link(to : ["team_id"]) [ {');
+    expect(g).toContain(
+      'driver : driver @insert @update @link(from : ["team_id"] to : ["fk_team"]) [ {',
+    );
     expect(g).toContain("driverId : driver_id");
     expect(g).toContain("name : name @nocheck");
     expect(g.trimEnd().endsWith("} ]\n};")).toBe(true);
@@ -192,13 +196,13 @@ describe("emitGraphql — nested", () => {
           table: "dept",
           permissions: { insert: false, update: true, delete: false },
           etag: "check",
-          link: ["deptno"],
+          link: { from: ["deptno"], to: ["dept_fk"] },
           fields: [{ key: "departmentName", source: "dept.dname" }],
         },
       ],
     };
     const g = emitGraphql(v);
-    expect(g).toContain('dept : dept @unnest @update @link(to : ["deptno"]) {');
+    expect(g).toContain('dept : dept @unnest @update @link(from : ["deptno"] to : ["dept_fk"]) {');
     expect(g).toContain("departmentName : dname");
   });
 
@@ -219,13 +223,13 @@ describe("emitGraphql — nested", () => {
           kind: "object",
           table: "dept",
           etag: "check",
-          link: ["deptno"],
+          link: { from: ["deptno"], to: ["dept_fk"] },
           fields: [{ key: "name", source: "dept.dname" }],
         },
       ],
     };
     const g = emitGraphql(v);
-    expect(g).toContain('dept : dept @link(to : ["deptno"]) {');
+    expect(g).toContain('dept : dept @link(from : ["deptno"] to : ["dept_fk"]) {');
   });
 
   it("throws MissingLinkError for a nested field without link", () => {
@@ -268,7 +272,7 @@ const departmentsView: DualityView = {
       table: "emp",
       permissions: { insert: true, update: true, delete: true },
       etag: "check",
-      link: ["deptno"],
+      link: { from: ["deptno"], to: ["deptno"] },
       fields: [
         { key: "employeeNumber", source: "emp.empno" },
         { key: "employeeName", source: "emp.ename" },
@@ -293,7 +297,7 @@ const employeeView: DualityView = {
       table: "dept",
       permissions: { insert: false, update: true, delete: false },
       etag: "check",
-      link: ["deptno"],
+      link: { from: ["deptno"], to: ["deptno"] },
       fields: [
         { key: "departmentNumber", source: "dept.deptno" },
         { key: "departmentName", source: "dept.dname" },

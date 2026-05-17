@@ -15,11 +15,18 @@ describe("dualityViewArbitrary", () => {
     );
   });
 
-  it("every nested field has a non-empty link (emittable)", () => {
+  it("every nested field has equal-length non-empty from/to link (emittable)", () => {
     fc.assert(
       fc.property(dualityViewArbitrary(), (view) => {
         const walk = (fs: AnyField[]): boolean =>
-          fs.every((f) => ("kind" in f ? !!f.link && f.link.length > 0 && walk(f.fields) : true));
+          fs.every((f) =>
+            "kind" in f
+              ? !!f.link &&
+                f.link.from.length > 0 &&
+                f.link.from.length === f.link.to.length &&
+                walk(f.fields)
+              : true,
+          );
         expect(walk(view.fields)).toBe(true);
       }),
       { numRuns: 500 },

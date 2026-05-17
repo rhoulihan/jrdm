@@ -80,7 +80,16 @@ const NestedFieldSchema = z.object({
   table: z.string().min(1),
   permissions: PermissionsSchema.optional(),
   etag: EtagPolicySchema.optional(),
-  link: z.array(z.string()).optional(),
+  link: z
+    .object({
+      from: z.array(z.string().min(1)).min(1),
+      to: z.array(z.string().min(1)).min(1),
+    })
+    .refine((l) => l.from.length === l.to.length, {
+      message: "link.from and link.to must have equal length",
+      path: ["to"],
+    })
+    .optional(),
   // fields is added via intersection after AnyFieldSchema is defined
 });
 

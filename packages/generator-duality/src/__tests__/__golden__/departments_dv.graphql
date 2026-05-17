@@ -3,7 +3,7 @@ dept @insert @update @delete {
   _id : deptno
   departmentName : dname
   location : loc
-  employees : emp @insert @update @delete @link(to : ["deptno"]) [ {
+  employees : emp @insert @update @delete @link(from : ["deptno"] to : ["deptno"]) [ {
     employeeNumber : empno
     employeeName : ename
     job : job

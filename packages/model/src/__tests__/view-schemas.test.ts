@@ -52,7 +52,7 @@ describe("DualityViewSchema", () => {
           table: "order_items",
           permissions: { insert: true, update: true, delete: false },
           etag: "check" as const,
-          link: ["order_id"],
+          link: { from: ["order_id"], to: ["order_id"] },
           fields: [{ key: "itemId", source: "order_items.line_item_id" }],
         },
       ],
@@ -87,7 +87,7 @@ describe("DualityViewSchema", () => {
           table: "order_items",
           permissions: { insert: true, update: true, delete: false },
           etag: "nocheck",
-          link: ["order_id"],
+          link: { from: ["order_id"], to: ["fk_order_id"] },
           fields: [{ key: "itemId", source: "order_items.line_item_id", noupdate: true }],
         },
       ],
@@ -100,7 +100,7 @@ describe("DualityViewSchema", () => {
     if ("kind" in item && item.kind === "array") {
       expect(item.permissions).toEqual({ insert: true, update: true, delete: false });
       expect(item.etag).toBe("nocheck");
-      expect(item.link).toEqual(["order_id"]);
+      expect(item.link).toEqual({ from: ["order_id"], to: ["fk_order_id"] });
       const inner = item.fields[0]!;
       expect("noupdate" in inner && inner.noupdate).toBe(true);
     } else {
@@ -171,7 +171,7 @@ describe("DualityViewSchema", () => {
           table: "k",
           permissions: { insert: true, update: false, delete: false },
           etag: "check",
-          link: ["t_id"],
+          link: { from: ["id"], to: ["t_id"] },
           fields: [{ key: "x", source: "k.x" }],
         },
       ],
@@ -181,6 +181,70 @@ describe("DualityViewSchema", () => {
 
   it("ProjectSchema is exported", () => {
     expect(typeof _ProjectSchema.safeParse).toBe("function");
+  });
+});
+
+describe("I3: NestedField.link is asymmetric { from, to }", () => {
+  const base = {
+    name: "orders_dv",
+    schema: "app",
+    createMode: "orReplace" as const,
+    root: {
+      table: "orders",
+      permissions: { insert: false, update: false, delete: false },
+      etag: "check" as const,
+    },
+  };
+
+  it("accepts equal-length from/to", () => {
+    const v = DualityViewSchema.safeParse({
+      ...base,
+      fields: [
+        { key: "_id", source: "orders.id" },
+        {
+          key: "items",
+          kind: "array",
+          table: "order_items",
+          link: { from: ["id"], to: ["order_id"] },
+          fields: [{ key: "sku", source: "order_items.sku" }],
+        },
+      ],
+    });
+    expect(v.success).toBe(true);
+  });
+
+  it("rejects mismatched from/to lengths", () => {
+    const v = DualityViewSchema.safeParse({
+      ...base,
+      fields: [
+        { key: "_id", source: "orders.id" },
+        {
+          key: "items",
+          kind: "array",
+          table: "order_items",
+          link: { from: ["id", "tenant"], to: ["order_id"] },
+          fields: [{ key: "sku", source: "order_items.sku" }],
+        },
+      ],
+    });
+    expect(v.success).toBe(false);
+  });
+
+  it("rejects the OLD string[] link shape", () => {
+    const v = DualityViewSchema.safeParse({
+      ...base,
+      fields: [
+        { key: "_id", source: "orders.id" },
+        {
+          key: "items",
+          kind: "array",
+          table: "order_items",
+          link: ["order_id"],
+          fields: [{ key: "sku", source: "order_items.sku" }],
+        },
+      ],
+    });
+    expect(v.success).toBe(false);
   });
 });
 
