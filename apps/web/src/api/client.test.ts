@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
-import { importOracle } from "./client";
+import { importOracle, fetchDdlPreview } from "./client";
+import type { DualityView } from "@jrdm/model";
 
 afterEach(() => vi.restoreAllMocks());
 
@@ -50,5 +51,73 @@ describe("importOracle", () => {
       ),
     );
     await expect(importOracle(body)).rejects.toMatchObject({ status: 502 });
+  });
+});
+
+const view: DualityView = {
+  name: "orders_dv",
+  schema: "app",
+  createMode: "orReplace",
+  root: {
+    table: "orders",
+    permissions: { insert: true, update: true, delete: true },
+    etag: "check",
+  },
+  fields: [{ key: "_id", source: "orders.id" }],
+};
+
+describe("fetchDdlPreview", () => {
+  afterEach(() => vi.restoreAllMocks());
+
+  it("returns sql for syntax=sql (default)", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(() =>
+        Promise.resolve(new Response(JSON.stringify({ sql: "CREATE ..." }), { status: 200 })),
+      ),
+    );
+    const r = await fetchDdlPreview(view, "sql");
+    expect(r).toEqual({ kind: "sql", ddl: "CREATE ..." });
+  });
+
+  it("returns graphql for syntax=graphql", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(() =>
+        Promise.resolve(new Response(JSON.stringify({ graphql: "orders { }" }), { status: 200 })),
+      ),
+    );
+    const r = await fetchDdlPreview(view, "graphql");
+    expect(r).toEqual({ kind: "graphql", ddl: "orders { }" });
+  });
+
+  it("throws ApiError(422) with message on unsupported_view", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(() =>
+        Promise.resolve(
+          new Response(
+            JSON.stringify({ error: "unsupported_view", message: "MissingLinkError: ..." }),
+            {
+              status: 422,
+            },
+          ),
+        ),
+      ),
+    );
+    await expect(fetchDdlPreview(view, "sql")).rejects.toMatchObject({
+      name: "ApiError",
+      status: 422,
+    });
+  });
+
+  it("throws ApiError(400) on invalid view", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(() =>
+        Promise.resolve(new Response(JSON.stringify({ error: "invalid view" }), { status: 400 })),
+      ),
+    );
+    await expect(fetchDdlPreview(view, "sql")).rejects.toMatchObject({ status: 400 });
   });
 });
