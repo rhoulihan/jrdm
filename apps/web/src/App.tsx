@@ -71,12 +71,12 @@ export function App() {
               <div className="h-1/2 min-h-0">
                 <DdlPane />
               </div>
-              <PreviewPanel />
             </div>
           )}
         </main>
-        <aside className="w-80 border-l border-jrdm-border overflow-auto">
+        <aside className="w-80 border-l border-jrdm-border overflow-auto flex flex-col">
           <ContextInspector />
+          {mode === "design" && <PreviewPanel />}
         </aside>
       </div>
       <footer className="h-32 border-t border-jrdm-border overflow-auto bg-surface-alt">
