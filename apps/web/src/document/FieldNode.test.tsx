@@ -99,3 +99,26 @@ it("dropping a column onto a SCALAR field does NOT mutate (only nested accept)",
   });
   expect(useJrdmStore.getState().editingView!.fields).toHaveLength(1);
 });
+
+it("a nested field is a treeitem with aria-expanded and aria-selected", () => {
+  useJrdmStore.getState().reset();
+  useJrdmStore.getState().selectField([1]);
+  const f: AnyField = { key: "items", kind: "array", table: "order_items", fields: [] };
+  render(<FieldNode field={f} path={[1]} />);
+  const node = screen.getByTestId("field-1");
+  expect(node).toHaveAttribute("role", "treeitem");
+  expect(node).toHaveAttribute("aria-expanded", "true");
+  expect(node).toHaveAttribute("aria-selected", "true");
+  expect(node).toHaveAttribute("tabindex", "0");
+});
+
+it("an unselected scalar field is a treeitem, aria-selected false, tabindex -1, no aria-expanded", () => {
+  useJrdmStore.getState().reset();
+  const f: AnyField = { key: "_id", source: "orders.id" };
+  render(<FieldNode field={f} path={[0]} />);
+  const node = screen.getByTestId("field-0");
+  expect(node).toHaveAttribute("role", "treeitem");
+  expect(node).toHaveAttribute("aria-selected", "false");
+  expect(node).toHaveAttribute("tabindex", "-1");
+  expect(node).not.toHaveAttribute("aria-expanded");
+});

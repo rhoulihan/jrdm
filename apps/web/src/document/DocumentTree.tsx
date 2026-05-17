@@ -1,4 +1,4 @@
-import type { DragEvent } from "react";
+import type { DragEvent, KeyboardEvent as ReactKeyboardEvent } from "react";
 import { useJrdmStore } from "../state/store";
 import { FieldNode } from "./FieldNode";
 import { DRAG_MIME, parseDragPayload } from "./dropTarget";
@@ -8,6 +8,7 @@ import {
   nestedField,
   getField,
   resolveAddTargetPath,
+  flattenPaths,
 } from "./documentModel";
 import type { NestedField } from "@jrdm/model";
 
@@ -25,6 +26,20 @@ export function DocumentTree() {
     const drag = parseDragPayload(raw);
     if (!drag || !view) return;
     setEditingView(addField(view, [], scalarField(drag.column, drag.table, drag.column)));
+  }
+
+  function onTreeKeyDown(e: ReactKeyboardEvent<HTMLDivElement>) {
+    if (!view) return;
+    if (e.key !== "ArrowDown" && e.key !== "ArrowUp") return;
+    e.preventDefault();
+    const order = flattenPaths(view);
+    if (order.length === 0) return;
+    const cur = selectedFieldPath ? selectedFieldPath.join(".") : null;
+    const idx = cur === null ? -1 : order.findIndex((p) => p.join(".") === cur);
+    let next: number;
+    if (e.key === "ArrowDown") next = idx < 0 ? 0 : Math.min(idx + 1, order.length - 1);
+    else next = idx <= 0 ? 0 : idx - 1;
+    selectField(order[next]!);
   }
 
   function addNested(kind: NestedField["kind"]) {
@@ -70,7 +85,7 @@ export function DocumentTree() {
           </button>
         ))}
       </div>
-      <div>
+      <div role="tree" tabIndex={0} onKeyDown={onTreeKeyDown}>
         {view.fields.map((f, i) => (
           <FieldNode key={i} field={f} path={[i]} />
         ))}

@@ -30,6 +30,10 @@ export function FieldNode({ field, path }: { field: AnyField; path: number[] }) 
       <div
         data-testid={`field-${pathId(path)}`}
         data-selected={isSelected ? "true" : "false"}
+        role="treeitem"
+        aria-selected={isSelected ? "true" : "false"}
+        tabIndex={isSelected ? 0 : -1}
+        {...(nested ? { "aria-expanded": "true" } : {})}
         className={`border-l-2 pl-2 my-0.5 cursor-pointer ${isSelected ? "border-accent bg-surface" : "border-jrdm-border"}`}
         onClick={() => select(path)}
         onDragOver={
