@@ -17,7 +17,8 @@ export function IssuesPanel() {
     if (path[0] !== "entities" || typeof path[1] !== "string") return;
     const name = path[1];
     const found = project?.entities.find((e) => e.name === name);
-    select(`${found?.schema ?? "app"}.${name}`);
+    if (!found) return;
+    select(`${found.schema}.${name}`);
   }
 
   return (
