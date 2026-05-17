@@ -149,3 +149,156 @@ test("nested authoring: + array → drop column into it → nested child + DDL",
   expect(lastViewFieldCount).toBeGreaterThanOrEqual(2);
   expect(lastPostedViewHasNestedField).toBe(true);
 });
+
+// ---------------------------------------------------------------------------
+// v0.4 live-preview scenario: deploy → sample → edit → conflict
+// All JRDM HTTP endpoints are route-mocked (established rule — no real Oracle).
+// ---------------------------------------------------------------------------
+
+const SAMPLE_DOCS = [
+  {
+    _id: 1,
+    order_status: "PENDING",
+    _metadata: { etag: "AABBCCDD" },
+  },
+  {
+    _id: 2,
+    order_status: "SHIPPED",
+    _metadata: { etag: "11223344" },
+  },
+];
+
+const READ_DOC = {
+  _id: 1,
+  order_status: "PENDING",
+  _metadata: { etag: "AABBCCDD" },
+};
+
+const WRITE_SUCCESS_DOC = {
+  _id: 1,
+  order_status: "PROCESSED",
+  _metadata: { etag: "EEFF0011" },
+};
+
+test("live-preview: deploy → sample → edit → conflict (API mocked)", async ({ page }) => {
+  // --- Route mocks ---
+  await page.route("**/api/import/oracle", (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify(IMPORT_PAYLOAD),
+    }),
+  );
+
+  await page.route("**/api/ddl/preview", (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        sql: "CREATE OR REPLACE JSON RELATIONAL DUALITY VIEW app.orders_dv AS",
+      }),
+    }),
+  );
+
+  await page.route("**/api/deploy", (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({ deployed: true, statements: 3, view: "orders_dv" }),
+    }),
+  );
+
+  await page.route("**/api/sample", (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({ documents: SAMPLE_DOCS }),
+    }),
+  );
+
+  await page.route("**/api/document/read", (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({ document: READ_DOC }),
+    }),
+  );
+
+  // First write → success (new etag); second write → 409 conflict.
+  let writeCallCount = 0;
+  await page.route("**/api/document/write", (route) => {
+    writeCallCount += 1;
+    if (writeCallCount === 1) {
+      return route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({ document: WRITE_SUCCESS_DOC }),
+      });
+    }
+    return route.fulfill({
+      status: 409,
+      contentType: "application/json",
+      body: JSON.stringify({
+        error: "etag_conflict",
+        message: "ORA-42699: ETag mismatch — document was modified by another session",
+      }),
+    });
+  });
+
+  // --- Navigate and import ---
+  await page.goto("/");
+  await page.getByLabel(/^user$/i).fill("scott");
+  await page.getByLabel(/^password$/i).fill("tiger");
+  await page.getByLabel(/connect string/i).fill("h:1521/FREEPDB1");
+  await page.getByLabel(/schema owner/i).fill("APP");
+  await page.getByRole("button", { name: /^import$/i }).click();
+  await expect(page.getByTestId("diagram-canvas")).toBeVisible();
+
+  // --- Enter design mode with an editingView ---
+  await page.getByText("orders", { exact: true }).click();
+  await page.getByRole("button", { name: /design view from/i }).click();
+  await expect(page.getByTestId("doctree")).toBeVisible();
+
+  // --- PreviewPanel is mounted in the right rail in design mode ---
+  await expect(page.getByTestId("preview-panel")).toBeVisible();
+
+  // --- Deploy ---
+  await page.getByTestId("deploy-btn").click();
+  await expect(page.getByTestId("deploy-success")).toBeVisible();
+  await expect(page.getByTestId("deploy-success")).toContainText("3 statements");
+
+  // --- Sample ---
+  await page.getByTestId("sample-btn").click();
+  // Both sampled docs should appear as rows with etags
+  await expect(page.getByTestId("doc-row-1")).toBeVisible();
+  await expect(page.getByTestId("doc-etag-1")).toBeVisible();
+  await expect(page.getByTestId("doc-etag-1")).toContainText("AABBCCDD");
+  await expect(page.getByTestId("doc-row-2")).toBeVisible();
+
+  // --- Open edit modal by clicking doc row ---
+  await page.getByTestId("doc-row-1").click();
+  // DocumentEditModal calls readDocument on mount; wait for edit-field to appear
+  await expect(page.getByTestId("edit-field")).toBeVisible();
+
+  // --- First save: succeeds, new etag shown ---
+  // The edit-field is pre-filled with the first editable scalar from READ_DOC
+  // (order_status = "PENDING"). Change it and save.
+  await page.getByTestId("edit-field").fill("PROCESSED");
+  await page.getByRole("button", { name: /^save$/i }).click();
+  await expect(page.getByTestId("edit-new-etag")).toBeVisible();
+  await expect(page.getByTestId("edit-new-etag")).toContainText("EEFF0011");
+
+  // Conflict banner must NOT be visible yet (the 409 has not fired yet)
+  await expect(page.getByTestId("conflict-banner")).not.toBeVisible();
+
+  // --- Second save: stale etag → 409 → conflict-banner ---
+  // The doc in the modal component still holds the original _metadata.etag
+  // (the component does not re-load the doc after a successful write), so this
+  // second Save fires writeDocument with the old etag → mocked 409.
+  await page.getByRole("button", { name: /^save$/i }).click();
+  await expect(page.getByTestId("conflict-banner")).toBeVisible();
+  await expect(page.getByTestId("conflict-banner")).toContainText("ORA-42699");
+
+  // Sanity: exactly 2 write calls were made (one success, one conflict)
+  expect(writeCallCount).toBe(2);
+});
