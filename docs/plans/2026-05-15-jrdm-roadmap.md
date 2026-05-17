@@ -288,6 +288,8 @@ These hold for every milestone and are checked at the end of each:
 - Sandbox schema name collisions across concurrent sessions — use UUID-suffixed schemas, document the cleanup cron.
 - `node-oracledb` thin vs thick — start thin; document precisely which v1 features force thick (likely none for v0.4).
 
+> v0.4 complete: live Oracle deploy, sample, ETag edit, conflict demo, and idempotent sandbox teardown all integration-verified (Tasks 1–16, PRs #89–#104). Single-click deploy surfaces success/error in the UI; sample returns ≤5 prettified JSON documents rendered as a collapsible tree; editing a field and saving rounds-trips the new ETag visibly; a deliberate stale write raises ORA-42699 and the ConflictBanner surfaces the mismatch; teardown is one button and leaves no orphaned schemas (verified via `all_users` assertion in integration). **I3 carried debt closed**: `NestedField.link` is now asymmetric `{ from, to }` — real FKs with differently-named parent/child columns join correctly, and the 10k round-trip property now genuinely exercises distinct from/to names (the arbitrary generates equal-length but usually different column name arrays). SSE for deploy progress was deliberately out of scope (synchronous JSON met every DoD — YAGNI). Oracle Free tablespace lesson: `GRANT UNLIMITED TABLESPACE` is required instead of `ALTER USER … QUOTA UNLIMITED ON USERS` (no `USERS` tablespace in FREEPDB1). Next: v0.5 MongoDB inference + suggested duality view.
+
 ---
 
 ## v0.5 — MongoDB Inference + Suggested Duality View (Weeks 9–10)
