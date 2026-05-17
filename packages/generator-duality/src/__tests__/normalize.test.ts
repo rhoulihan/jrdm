@@ -16,7 +16,7 @@ const v: DualityView = {
       table: "driver",
       permissions: { insert: true, update: false, delete: false },
       etag: "check",
-      link: ["team_id"],
+      link: { from: ["team_id"], to: ["fk_team"] },
       fields: [{ key: "name", source: "driver.name", etag: "nocheck" }],
     },
   ],

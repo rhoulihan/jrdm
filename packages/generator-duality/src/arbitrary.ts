@@ -47,7 +47,12 @@ function nested(depth: number, knownTables: string[]): fc.Arbitrary<NestedField>
         etag: fc.option(fc.constantFrom<"check" | "nocheck">("check", "nocheck"), {
           nil: undefined,
         }),
-        link: fc.array(ident, { minLength: 1, maxLength: 2 }),
+        link: fc.integer({ min: 1, max: 2 }).chain((n) =>
+          fc.record({
+            from: fc.array(ident, { minLength: n, maxLength: n }),
+            to: fc.array(ident, { minLength: n, maxLength: n }),
+          }),
+        ),
         fields: fields(table, depth - 1, [...knownTables, table]),
       },
       { requiredKeys: ["key", "kind", "table", "link", "fields"] },

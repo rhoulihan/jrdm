@@ -47,8 +47,12 @@ function emitScalar(field: ScalarField, alias: string): string {
   return s;
 }
 
-function joinPredicate(childAlias: string, parentAlias: string, link: string[]): string {
-  return link.map((c) => `${childAlias}.${c} = ${parentAlias}.${c}`).join(" AND ");
+function joinPredicate(
+  childAlias: string,
+  parentAlias: string,
+  link: { from: string[]; to: string[] },
+): string {
+  return link.to.map((c, i) => `${childAlias}.${c} = ${parentAlias}.${link.from[i]}`).join(" AND ");
 }
 
 function emitChildBody(fields: AnyField[], alias: string, ctx: AliasContext): string {
@@ -56,7 +60,8 @@ function emitChildBody(fields: AnyField[], alias: string, ctx: AliasContext): st
 }
 
 function emitNested(f: NestedField, parentAlias: string, ctx: AliasContext): string {
-  if (!f.link || f.link.length === 0) throw new MissingLinkError(f.key);
+  if (!f.link || f.link.from.length === 0 || f.link.to.length === 0)
+    throw new MissingLinkError(f.key);
   const childAlias = ctx.aliasFor(f.table);
   const dml = emitDml(f.permissions);
   const check = f.etag === "nocheck" ? " WITH NOCHECK" : "";

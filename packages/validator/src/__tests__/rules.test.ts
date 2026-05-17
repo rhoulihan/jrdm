@@ -145,7 +145,7 @@ const okView: DualityView = {
       kind: "array",
       table: "driver",
       etag: "check",
-      link: ["team_id"],
+      link: { from: ["team_id"], to: ["fk_team"] },
       fields: [{ key: "name", source: "driver.name" }],
     },
   ],
@@ -175,6 +175,43 @@ describe("validateDualityView", () => {
     );
   });
 
+  it("flags a nested field with an empty link.from or link.to (I3)", () => {
+    const emptyFrom: DualityView = {
+      ...okView,
+      fields: [
+        { key: "_id", source: "team.team_id" },
+        {
+          key: "driver",
+          kind: "array",
+          table: "driver",
+          etag: "check",
+          link: { from: [], to: ["fk_team"] },
+          fields: [{ key: "n", source: "driver.name" }],
+        },
+      ],
+    };
+    expect(validateDualityView(emptyFrom)).toContainEqual(
+      expect.objectContaining({ code: "NESTED_LINK_REQUIRED", severity: "error" }),
+    );
+    const emptyTo: DualityView = {
+      ...okView,
+      fields: [
+        { key: "_id", source: "team.team_id" },
+        {
+          key: "driver",
+          kind: "array",
+          table: "driver",
+          etag: "check",
+          link: { from: ["team_id"], to: [] },
+          fields: [{ key: "n", source: "driver.name" }],
+        },
+      ],
+    };
+    expect(validateDualityView(emptyTo)).toContainEqual(
+      expect.objectContaining({ code: "NESTED_LINK_REQUIRED", severity: "error" }),
+    );
+  });
+
   it("flags when the first field is not _id", () => {
     const v: DualityView = {
       ...okView,
@@ -198,7 +235,7 @@ describe("validateDualityView", () => {
           kind: "object",
           table: "team",
           etag: "check",
-          link: ["team_id"],
+          link: { from: ["team_id"], to: ["fk_team"] },
           fields: [{ key: "n", source: "team.name" }],
         },
       ],

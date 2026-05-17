@@ -105,11 +105,11 @@ export function validateDualityView(view: DualityView): Issue[] {
     fields.forEach((f, i) => {
       if (!("kind" in f)) return;
       const here = [...path, i];
-      if (!f.link || f.link.length === 0) {
+      if (!f.link || f.link.from.length === 0 || f.link.to.length === 0) {
         issues.push({
           code: "NESTED_LINK_REQUIRED",
           severity: "error",
-          message: `Nested field "${f.key}" must declare a non-empty link (join columns)`,
+          message: `Nested field "${f.key}" must declare non-empty link.from and link.to (join columns)`,
           path: here,
         });
       }

@@ -53,16 +53,22 @@ describe("FieldInspector", () => {
     });
   });
 
-  it("nested: edits link list and toggles a permission", async () => {
+  it("nested: edits asymmetric link.from/link.to and toggles a permission", async () => {
     seedNested();
     useJrdmStore.getState().selectField([1]);
     render(<FieldInspector />);
-    const link = screen.getByLabelText(/link/i);
-    await userEvent.clear(link);
-    await userEvent.type(link, "order_id");
+    const from = screen.getByTestId("link-from");
+    const to = screen.getByTestId("link-to");
+    await userEvent.clear(from);
+    await userEvent.type(from, "id");
+    await userEvent.clear(to);
+    await userEvent.type(to, "order_id");
     await userEvent.click(screen.getByLabelText(/insert/i));
     const f = useJrdmStore.getState().editingView!.fields[1];
-    expect(f).toMatchObject({ link: ["order_id"], permissions: { insert: true } });
+    expect(f).toMatchObject({
+      link: { from: ["id"], to: ["order_id"] },
+      permissions: { insert: true },
+    });
   });
 
   it("Remove field deletes it and clears selection", async () => {
