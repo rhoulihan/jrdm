@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { DocumentTree } from "./DocumentTree";
 import { useJrdmStore } from "../state/store";
 
@@ -31,4 +32,43 @@ it("dropping a column payload onto the tree appends a scalar field", () => {
   const v = useJrdmStore.getState().editingView!;
   expect(v.fields).toHaveLength(2);
   expect(v.fields[1]).toEqual({ key: "order_status", source: "orders.order_status" });
+});
+
+it("toolbar '+ array' appends a nested array field at root and selects it", async () => {
+  useJrdmStore.getState().startNewView("orders");
+  render(<DocumentTree />);
+  await userEvent.click(screen.getByRole("button", { name: "+ array" }));
+  const v = useJrdmStore.getState().editingView!;
+  expect(v.fields).toHaveLength(2);
+  expect(v.fields[1]).toEqual({
+    key: "new_array",
+    kind: "array",
+    table: "orders",
+    fields: [],
+  });
+  expect(useJrdmStore.getState().selectedFieldPath).toEqual([1]);
+});
+
+it("toolbar '+ object' adds INTO the selected nested field", async () => {
+  useJrdmStore.getState().startNewView("orders");
+  // add an array at root and select it
+  const store = useJrdmStore.getState();
+  const { addField, nestedField } = await import("./documentModel");
+  store.setEditingView(
+    addField(store.editingView!, [], nestedField("items", "array", "order_items")),
+  );
+  store.selectField([1]);
+  render(<DocumentTree />);
+  await userEvent.click(screen.getByRole("button", { name: "+ object" }));
+  const items = useJrdmStore.getState().editingView!.fields[1];
+  expect(items && "fields" in items && items.fields).toEqual([
+    { key: "new_object", kind: "object", table: "orders", fields: [] },
+  ]);
+  expect(useJrdmStore.getState().selectedFieldPath).toEqual([1, 0]);
+});
+
+it("toolbar is absent when there is no editingView", () => {
+  useJrdmStore.getState().reset();
+  render(<DocumentTree />);
+  expect(screen.queryByRole("button", { name: "+ array" })).not.toBeInTheDocument();
 });
