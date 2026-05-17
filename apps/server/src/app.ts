@@ -7,6 +7,7 @@ import { deployRoute } from "./routes/deploy";
 import { importOracleRoute } from "./routes/import-oracle";
 import { sampleRoute } from "./routes/sample";
 import { documentRoute } from "./routes/document";
+import { sandboxRoute } from "./routes/sandbox";
 
 export async function buildApp() {
   const app = Fastify({ logger: false });
@@ -17,5 +18,6 @@ export async function buildApp() {
   await app.register(importOracleRoute, { prefix: "/api" });
   await app.register(sampleRoute, { prefix: "/api" });
   await app.register(documentRoute, { prefix: "/api" });
+  await app.register(sandboxRoute, { prefix: "/api" });
   return app;
 }

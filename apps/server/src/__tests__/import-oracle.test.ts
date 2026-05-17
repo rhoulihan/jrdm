@@ -46,6 +46,28 @@ describe("buildApp — route registration", () => {
     expect(writeRes.statusCode).not.toBe(404);
     await app.close();
   });
+
+  it("registers POST /api/sandbox and DELETE /api/sandbox (not 404)", async () => {
+    const app = await buildApp();
+
+    // POST /api/sandbox — invalid body returns 400, not 404
+    const postRes = await app.inject({
+      method: "POST",
+      url: "/api/sandbox",
+      payload: {},
+    });
+    expect(postRes.statusCode).not.toBe(404);
+
+    // DELETE /api/sandbox — invalid body returns 400, not 404
+    const deleteRes = await app.inject({
+      method: "DELETE",
+      url: "/api/sandbox",
+      payload: {},
+    });
+    expect(deleteRes.statusCode).not.toBe(404);
+
+    await app.close();
+  });
 });
 
 describe("POST /api/import/oracle — validation", () => {
