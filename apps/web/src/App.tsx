@@ -5,6 +5,7 @@ import { ContextInspector } from "./inspector/ContextInspector";
 import { IssuesPanel } from "./issues/IssuesPanel";
 import { DocumentTree } from "./document/DocumentTree";
 import { DdlPane } from "./ddl/DdlPane";
+import { PreviewPanel } from "./preview/PreviewPanel";
 import { useImport } from "./import/useImport";
 import { useJrdmStore } from "./state/store";
 
@@ -73,8 +74,9 @@ export function App() {
             </div>
           )}
         </main>
-        <aside className="w-80 border-l border-jrdm-border overflow-auto">
+        <aside className="w-80 border-l border-jrdm-border overflow-auto flex flex-col">
           <ContextInspector />
+          {mode === "design" && <PreviewPanel />}
         </aside>
       </div>
       <footer className="h-32 border-t border-jrdm-border overflow-auto bg-surface-alt">

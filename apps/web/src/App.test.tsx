@@ -73,4 +73,30 @@ describe("App shell", () => {
     expect(screen.getByTestId("doctree-empty")).toBeInTheDocument();
     expect(screen.getByTestId("ddl-empty")).toBeInTheDocument();
   });
+
+  it("shows preview-panel in design mode and not in erd mode", async () => {
+    const { default: userEvent } = await import("@testing-library/user-event");
+    useJrdmStore.getState().reset();
+    render(<App />);
+    // ERD mode by default — no preview-panel
+    expect(screen.queryByTestId("preview-panel")).not.toBeInTheDocument();
+    // switch to Design mode — preview-panel appears
+    await userEvent.click(screen.getByRole("button", { name: /design mode/i }));
+    expect(screen.getByTestId("preview-panel")).toBeInTheDocument();
+    // switch back to ERD — preview-panel gone
+    await userEvent.click(screen.getByRole("button", { name: /erd mode/i }));
+    expect(screen.queryByTestId("preview-panel")).not.toBeInTheDocument();
+  });
+
+  it("preview-panel appears outside the main document-tree/ddl column in design mode", async () => {
+    const { default: userEvent } = await import("@testing-library/user-event");
+    useJrdmStore.getState().reset();
+    render(<App />);
+    await userEvent.click(screen.getByRole("button", { name: /design mode/i }));
+    // PreviewPanel is in the right-rail aside, not inside the main flex-column
+    const panel = screen.getByTestId("preview-panel");
+    const ddlEmpty = screen.getByTestId("ddl-empty");
+    // panel and ddl-empty must NOT share the same parent (different regions)
+    expect(panel.parentElement).not.toBe(ddlEmpty.parentElement);
+  });
 });
