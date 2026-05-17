@@ -66,3 +66,26 @@ export function patchField(
     ),
   };
 }
+
+export function resolveAddTargetPath(
+  view: DualityView,
+  selectedFieldPath: number[] | null,
+): number[] {
+  if (!selectedFieldPath) return [];
+  const f = getField(view, selectedFieldPath);
+  if (f && "kind" in f) return selectedFieldPath;
+  return [];
+}
+
+export function flattenPaths(view: DualityView): number[][] {
+  const out: number[][] = [];
+  const walk = (fields: AnyField[], prefix: number[]) => {
+    fields.forEach((f, i) => {
+      const p = [...prefix, i];
+      out.push(p);
+      if ("kind" in f) walk(f.fields, p);
+    });
+  };
+  walk(view.fields, []);
+  return out;
+}
