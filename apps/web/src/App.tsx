@@ -5,6 +5,7 @@ import { ContextInspector } from "./inspector/ContextInspector";
 import { IssuesPanel } from "./issues/IssuesPanel";
 import { DocumentTree } from "./document/DocumentTree";
 import { DdlPane } from "./ddl/DdlPane";
+import { PreviewPanel } from "./preview/PreviewPanel";
 import { useImport } from "./import/useImport";
 import { useJrdmStore } from "./state/store";
 
@@ -70,6 +71,7 @@ export function App() {
               <div className="h-1/2 min-h-0">
                 <DdlPane />
               </div>
+              <PreviewPanel />
             </div>
           )}
         </main>
