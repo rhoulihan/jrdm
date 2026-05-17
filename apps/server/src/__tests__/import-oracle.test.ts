@@ -15,6 +15,20 @@ describe("POST /api/import/oracle — response contract", () => {
   });
 });
 
+describe("buildApp — route registration", () => {
+  it("registers /api/sample (not 404)", async () => {
+    const app = await buildApp();
+    const res = await app.inject({
+      method: "POST",
+      url: "/api/sample",
+      payload: {},
+    });
+    // Route is registered — invalid body returns 400, not 404
+    expect(res.statusCode).not.toBe(404);
+    await app.close();
+  });
+});
+
 describe("POST /api/import/oracle — validation", () => {
   it("400 when connection is missing", async () => {
     const app = await buildApp();

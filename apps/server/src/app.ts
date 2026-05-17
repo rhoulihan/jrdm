@@ -5,6 +5,7 @@ import { healthRoute } from "./routes/health";
 import { ddlPreviewRoute } from "./routes/ddl-preview";
 import { deployRoute } from "./routes/deploy";
 import { importOracleRoute } from "./routes/import-oracle";
+import { sampleRoute } from "./routes/sample";
 
 export async function buildApp() {
   const app = Fastify({ logger: false });
@@ -13,5 +14,6 @@ export async function buildApp() {
   await app.register(ddlPreviewRoute, { prefix: "/api" });
   await app.register(deployRoute, { prefix: "/api" });
   await app.register(importOracleRoute, { prefix: "/api" });
+  await app.register(sampleRoute, { prefix: "/api" });
   return app;
 }
