@@ -1,5 +1,6 @@
 import type { ImportPayload } from "../state/store";
 import type { DualityView } from "@jrdm/model";
+import { buildDdlRequestBody } from "../ddl/ddlRequest";
 
 export interface ImportRequest {
   connection: { user: string; password: string; connectString: string };
@@ -48,7 +49,7 @@ export async function fetchDdlPreview(
   const res = await fetch("/api/ddl/preview", {
     method: "POST",
     headers: { "content-type": "application/json" },
-    body: JSON.stringify({ view, syntax }),
+    body: JSON.stringify(buildDdlRequestBody(view, syntax)),
   });
   if (!res.ok) {
     let msg = `HTTP ${res.status}`;
