@@ -247,6 +247,8 @@ These hold for every milestone and are checked at the end of each:
 > v0.3a complete: dual-syntax (SQL/JSON + GraphQL) duality-view emitter with full nested emission, collision-safe aliasing (closes carried-debt M1), fast-check 10k round-trip equivalence, validator duality-view rules, and a syntax-selectable /api/ddl/preview. v0.3b (document-tree drag-drop editor + DDL pane toggle) is next.
 >
 > v0.3b complete: browser duality-view authoring — drag entity columns into a document-tree, edit every annotation via Field/View inspectors, live DDL pane toggling SQL/JSON ⇄ GraphQL over the v0.3a engine. Closes the v0.2b-review IssuesPanel.focus carried debt. v0.3 (Document Editor + GraphQL Emitter) is fully delivered (v0.3a engine + v0.3b UI). I3 (asymmetric join columns) remains deferred to v0.4 — live deploy must split NestedField.link into from/to before joins are correct against real FKs.
+>
+> v0.3b.1 closes the v0.3b milestone-review findings: nested authoring is now reachable (DocumentTree `+ object/unnest/array` toolbar targeting the selected nested field; FieldNode is a drop target so columns drop into nested fields) and the document tree has real a11y (`role=tree/treeitem`, `aria-selected/expanded`, ArrowUp/Down keyboard selection). v0.3 (Document Editor + GraphQL Emitter) is now genuinely complete — the editor can author the full JSON document hierarchy the duality engine emits. Known minor follow-ups tracked in lessons (duplicate-column dedup; cross-pane ERD↔doc drag UX). I3 (asymmetric join columns) remains v0.4.
 
 ---
 
