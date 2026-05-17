@@ -61,4 +61,16 @@ describe("App shell", () => {
     await userEvent.click(screen.getByRole("button", { name: /^import$/i }));
     await waitFor(() => expect(screen.getByTestId("error-banner")).toHaveTextContent("ORA-12541"));
   });
+
+  it("toggles ERD/Design mode and shows the document editor surface", async () => {
+    const { default: userEvent } = await import("@testing-library/user-event");
+    useJrdmStore.getState().reset();
+    render(<App />);
+    // ERD mode by default — diagram empty-state visible
+    expect(screen.getByTestId("diagram-empty")).toBeInTheDocument();
+    // switch to Design mode
+    await userEvent.click(screen.getByRole("button", { name: /design mode/i }));
+    expect(screen.getByTestId("doctree-empty")).toBeInTheDocument();
+    expect(screen.getByTestId("ddl-empty")).toBeInTheDocument();
+  });
 });
