@@ -117,3 +117,71 @@ describe("useJrdmStore — authoring state", () => {
     expect(s.ddlSyntax).toBe("sql");
   });
 });
+
+describe("useJrdmStore — preview slice", () => {
+  beforeEach(() => useJrdmStore.getState().reset());
+
+  it("defaults: deployState idle, deployMessage null, sampleDocs [], selectedDocId null, conflict null", () => {
+    const s = useJrdmStore.getState();
+    expect(s.deployState).toBe("idle");
+    expect(s.deployMessage).toBeNull();
+    expect(s.sampleDocs).toEqual([]);
+    expect(s.selectedDocId).toBeNull();
+    expect(s.conflict).toBeNull();
+  });
+
+  it("setDeployState updates deployState and deployMessage", () => {
+    useJrdmStore.getState().setDeployState("deploying");
+    expect(useJrdmStore.getState().deployState).toBe("deploying");
+    expect(useJrdmStore.getState().deployMessage).toBeNull();
+
+    useJrdmStore.getState().setDeployState("deployed", "3 statements");
+    expect(useJrdmStore.getState().deployState).toBe("deployed");
+    expect(useJrdmStore.getState().deployMessage).toBe("3 statements");
+
+    useJrdmStore.getState().setDeployState("error", "ORA-00942");
+    expect(useJrdmStore.getState().deployState).toBe("error");
+    expect(useJrdmStore.getState().deployMessage).toBe("ORA-00942");
+  });
+
+  it("setSampleDocs stores documents array", () => {
+    const docs = [
+      { _id: 1, name: "foo" },
+      { _id: 2, name: "bar" },
+    ];
+    useJrdmStore.getState().setSampleDocs(docs);
+    expect(useJrdmStore.getState().sampleDocs).toEqual(docs);
+  });
+
+  it("selectDoc sets selectedDocId; clearing works", () => {
+    useJrdmStore.getState().selectDoc(42);
+    expect(useJrdmStore.getState().selectedDocId).toBe(42);
+    useJrdmStore.getState().selectDoc("abc");
+    expect(useJrdmStore.getState().selectedDocId).toBe("abc");
+    useJrdmStore.getState().selectDoc(null);
+    expect(useJrdmStore.getState().selectedDocId).toBeNull();
+  });
+
+  it("setConflict sets conflict message; clearing works", () => {
+    useJrdmStore.getState().setConflict({ message: "ORA-42699: ETag mismatch" });
+    expect(useJrdmStore.getState().conflict).toEqual({ message: "ORA-42699: ETag mismatch" });
+    useJrdmStore.getState().setConflict(null);
+    expect(useJrdmStore.getState().conflict).toBeNull();
+  });
+
+  it("reset clears preview slice (no stale conflict across projects)", () => {
+    useJrdmStore.getState().setDeployState("deployed", "2 statements");
+    useJrdmStore.getState().setSampleDocs([{ _id: 1 }]);
+    useJrdmStore.getState().selectDoc(1);
+    useJrdmStore.getState().setConflict({ message: "ORA-42699" });
+
+    useJrdmStore.getState().reset();
+
+    const s = useJrdmStore.getState();
+    expect(s.deployState).toBe("idle");
+    expect(s.deployMessage).toBeNull();
+    expect(s.sampleDocs).toEqual([]);
+    expect(s.selectedDocId).toBeNull();
+    expect(s.conflict).toBeNull();
+  });
+});

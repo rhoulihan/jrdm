@@ -28,6 +28,12 @@ interface JrdmState {
   editingView: DualityView | null;
   selectedFieldPath: number[] | null;
   ddlSyntax: DdlSyntax;
+  // preview slice
+  deployState: "idle" | "deploying" | "deployed" | "error";
+  deployMessage: string | null;
+  sampleDocs: unknown[];
+  selectedDocId: string | number | null;
+  conflict: { message: string } | null;
   setConnection: (patch: Partial<ConnectionDraft>) => void;
   setImport: (p: ImportPayload) => void;
   selectEntity: (name: string | null) => void;
@@ -36,6 +42,10 @@ interface JrdmState {
   setEditingView: (v: DualityView | null) => void;
   selectField: (path: number[] | null) => void;
   setDdlSyntax: (s: DdlSyntax) => void;
+  setDeployState: (s: JrdmState["deployState"], message?: string | null) => void;
+  setSampleDocs: (d: unknown[]) => void;
+  selectDoc: (id: string | number | null) => void;
+  setConflict: (c: { message: string } | null) => void;
   reset: () => void;
 }
 
@@ -54,6 +64,14 @@ const AUTHORING_DEFAULTS = {
   ddlSyntax: "sql" as DdlSyntax,
 };
 
+const PREVIEW_DEFAULTS = {
+  deployState: "idle" as const,
+  deployMessage: null as string | null,
+  sampleDocs: [] as unknown[],
+  selectedDocId: null as string | number | null,
+  conflict: null as { message: string } | null,
+} as const;
+
 export const useJrdmStore = create<JrdmState>((set) => ({
   connection: { ...EMPTY_CONNECTION },
   project: null,
@@ -61,6 +79,7 @@ export const useJrdmStore = create<JrdmState>((set) => ({
   issues: [],
   selectedEntity: null,
   ...AUTHORING_DEFAULTS,
+  ...PREVIEW_DEFAULTS,
   setConnection: (patch) => set((s) => ({ connection: { ...s.connection, ...patch } })),
   setImport: (p) => set({ project: p.project, relationships: p.relationships, issues: p.issues }),
   selectEntity: (name) => set({ selectedEntity: name }),
@@ -83,6 +102,10 @@ export const useJrdmStore = create<JrdmState>((set) => ({
   setEditingView: (v) => set({ editingView: v }),
   selectField: (path) => set({ selectedFieldPath: path }),
   setDdlSyntax: (s) => set({ ddlSyntax: s }),
+  setDeployState: (s, message = null) => set({ deployState: s, deployMessage: message ?? null }),
+  setSampleDocs: (d) => set({ sampleDocs: d }),
+  selectDoc: (id) => set({ selectedDocId: id }),
+  setConflict: (c) => set({ conflict: c }),
   reset: () =>
     set({
       connection: { ...EMPTY_CONNECTION },
@@ -91,5 +114,6 @@ export const useJrdmStore = create<JrdmState>((set) => ({
       issues: [],
       selectedEntity: null,
       ...AUTHORING_DEFAULTS,
+      ...PREVIEW_DEFAULTS,
     }),
 }));
