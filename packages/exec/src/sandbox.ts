@@ -9,8 +9,7 @@ export function sandboxSchemaName(projectId: string): string {
 export function createSandboxDdl(name: string, password: string): string[] {
   return [
     `CREATE USER "${name}" IDENTIFIED BY "${password}"`,
-    `GRANT CONNECT, RESOURCE TO "${name}"`,
-    `ALTER USER "${name}" QUOTA UNLIMITED ON USERS`,
+    `GRANT CONNECT, RESOURCE, UNLIMITED TABLESPACE TO "${name}"`,
   ];
 }
 

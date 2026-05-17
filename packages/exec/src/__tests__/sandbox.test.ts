@@ -33,12 +33,11 @@ describe("sandboxSchemaName", () => {
 });
 
 describe("createSandboxDdl", () => {
-  it("returns exact three DDL statements", () => {
+  it("returns exact two DDL statements", () => {
     const ddl = createSandboxDdl("JRDM_PROJ_FOO", "secret123");
     expect(ddl).toEqual([
       `CREATE USER "JRDM_PROJ_FOO" IDENTIFIED BY "secret123"`,
-      `GRANT CONNECT, RESOURCE TO "JRDM_PROJ_FOO"`,
-      `ALTER USER "JRDM_PROJ_FOO" QUOTA UNLIMITED ON USERS`,
+      `GRANT CONNECT, RESOURCE, UNLIMITED TABLESPACE TO "JRDM_PROJ_FOO"`,
     ]);
   });
 });
