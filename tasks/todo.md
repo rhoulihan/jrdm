@@ -107,6 +107,14 @@ Detailed plan: [`docs/plans/2026-05-15-jrdm-v0.1-spike.md`](../docs/plans/2026-0
 - [x] Authoring golden-path e2e
 - [x] DDL-pane perf guard
 
+### v0.3b.1 — Nested authoring + tree a11y (closes v0.3b-review Critical+Important) — DONE
+
+- [x] documentModel resolveAddTargetPath + flattenPaths
+- [x] DocumentTree add-field toolbar (object/unnest/array)
+- [x] FieldNode nested drop target
+- [x] Tree a11y (role=tree/treeitem, aria, ArrowUp/Down)
+- [x] Nested-authoring e2e
+
 ### v0.4 — Live Oracle Preview + ETag Round-Trip (Weeks 7–8) — NEXT
 
 ## v0.4 — Live Oracle Preview + ETag Round-Trip (Weeks 7–8)
