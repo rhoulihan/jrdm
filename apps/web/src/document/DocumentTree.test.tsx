@@ -72,3 +72,29 @@ it("toolbar is absent when there is no editingView", () => {
   render(<DocumentTree />);
   expect(screen.queryByRole("button", { name: "+ array" })).not.toBeInTheDocument();
 });
+
+it("the field tree container is role=tree", () => {
+  useJrdmStore.getState().startNewView("orders");
+  render(<DocumentTree />);
+  expect(screen.getByRole("tree")).toBeInTheDocument();
+});
+
+it("ArrowDown selects the first field when none selected, then the next", () => {
+  useJrdmStore.getState().startNewView("orders"); // fields: [_id]
+  const store = useJrdmStore.getState();
+  store.setEditingView({
+    ...store.editingView!,
+    fields: [
+      { key: "_id", source: "orders.id" },
+      { key: "status", source: "orders.order_status" },
+    ],
+  });
+  render(<DocumentTree />);
+  const tree = screen.getByRole("tree");
+  fireEvent.keyDown(tree, { key: "ArrowDown" });
+  expect(useJrdmStore.getState().selectedFieldPath).toEqual([0]);
+  fireEvent.keyDown(tree, { key: "ArrowDown" });
+  expect(useJrdmStore.getState().selectedFieldPath).toEqual([1]);
+  fireEvent.keyDown(tree, { key: "ArrowUp" });
+  expect(useJrdmStore.getState().selectedFieldPath).toEqual([0]);
+});
