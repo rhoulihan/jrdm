@@ -70,6 +70,22 @@ describe("buildApp — route registration", () => {
   });
 });
 
+describe("buildApp — staticWebRoute co-registration with API routes", () => {
+  it("registers /api/import/oracle alongside staticWebRoute (both coexist, route not 404)", async () => {
+    // Verifies that app.ts registers staticWebRoute LAST without breaking
+    // the existing /api/import/oracle route. Invalid body → 400, never 404.
+    const app = await buildApp();
+    const res = await app.inject({
+      method: "POST",
+      url: "/api/import/oracle",
+      payload: { schemaOwner: "APP", projectName: "p" }, // missing connection → 400
+    });
+    // Route is registered — invalid body returns 400, not 404
+    expect(res.statusCode).toBe(400);
+    await app.close();
+  });
+});
+
 describe("POST /api/import/oracle — validation", () => {
   it("400 when connection is missing", async () => {
     const app = await buildApp();

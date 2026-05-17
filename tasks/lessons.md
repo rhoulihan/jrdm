@@ -1,5 +1,15 @@
 # Lessons
 
+## 2026-05-17 — v0.4.1: Docker image shipped API-only (web UI gap closed)
+
+The v0.4 Docker image (`jrdm:dev`) built and ran only `@jrdm/server` — the React SPA was never included, so `docker compose up` gave no usable GUI. Closed in `feat/v041-bundle-web-ui`:
+
+- **Dockerfile**: the build stage now runs `pnpm --filter @jrdm/server... build && pnpm --filter @jrdm/web build` so `apps/web/dist` is emitted and carried into runtime by the existing `COPY --from=build`. CMD/port unchanged.
+- **Same-origin serving via `@fastify/static`**: `staticWebRoute` (registered LAST in `buildApp()`) serves the SPA from `apps/web/dist`. Because the web client already calls **relative** `/api/…` URLs, no proxy configuration is needed — same origin, zero config.
+- **Graceful no-op when dist absent**: if `apps/web/dist` does not exist (unit/integration test envs never run `vite build`), the plugin registers nothing and returns early. All existing server tests stay green with zero changes required.
+- **SPA fallback + API 404 preservation**: `setNotFoundHandler` returns `index.html` only for `GET` requests not starting with `/api`; all `/api/*` unknowns and non-GET methods still get the existing JSON `{error:"Not Found",statusCode:404}` — existing test contracts unbroken.
+- **`pnpm-lock.yaml` committed**: CI installs with `--frozen-lockfile`; the lockfile was updated when `@fastify/static ^8.0.0` was added and committed in the same PR.
+
 ## 2026-05-17 — v0.4: I3, ETag write contract, SSE omission, Oracle Free tablespace, exec mocked-unit tension
 
 **I3 rationale + hollow-property lesson.** The old `link: string[]` schema applied the same column name to both sides of every JOIN predicate — it could not express real FK relationships where the parent column (e.g., `orders.id`) and the child column (e.g., `order_items.order_id`) have different names, which is the normal case. The 10k round-trip property appeared to exercise this but was hollow: the arbitrary generated a single name array used for both join sides, so the SQL normalizer's same-name backreference regex (`/\w+\.(\w+) = \w+\.\1/g`) always matched. Once the arbitrary was changed to generate equal-length but independently named `from`/`to` arrays, the regex failed — revealing the same "property is hollow until the generator exercises the divergent field" failure mode as the v0.3a root-etag lesson. Fix: asymmetric `{ from, to }` schema with Zod equal-length refinement; `joinPredicate` emits `child.to[i] = parent.from[i]`; normalizers read both syntaxes; arbitrary chains `fc.integer({min:1,max:2})` → `fc.record({from:fc.array(ident,{minLength:n,maxLength:n}), to:fc.array(...)})` so both sides are genuinely distinct in practice.

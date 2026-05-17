@@ -8,7 +8,7 @@ COPY tools ./tools
 RUN pnpm install --frozen-lockfile
 
 FROM deps AS build
-RUN pnpm --filter @jrdm/server... build
+RUN pnpm --filter @jrdm/server... build && pnpm --filter @jrdm/web build
 
 FROM node:22-bookworm-slim AS runtime
 WORKDIR /app
