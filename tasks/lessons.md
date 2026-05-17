@@ -1,5 +1,9 @@
 # Lessons
 
+## 2026-05-17 — v0.3b authoring UI: native drag-drop, no external DnD lib
+
+The document editor uses the browser-native HTML5 drag-and-drop API (a custom `application/x-jrdm-column` dataTransfer payload from draggable EntityNode columns → DocumentTree `onDrop`). We deliberately did NOT add react-dnd / dnd-kit: the interactions are simple (drag a column → append a bound scalar field), native DnD is jsdom/RTL-testable via `fireEvent.drop(el, { dataTransfer: { getData } })`, and it adds zero deps. The DDL pane calls the real `/api/ddl/preview` (v0.3a); unit tests stub fetch, the Playwright e2e route-mocks both `/api/import/oracle` and `/api/ddl/preview` — consistent with the "never mock external systems; mocking our own API at the browser edge for UI determinism is fine" rule. Store mutations to `editingView` go through pure immutable `documentModel` path-patch helpers so the DDL preview is deterministic and the tree ops are unit-tested in isolation.
+
 ## 2026-05-16 — v0.3a hardening: root-etag dual-syntax parity closed; link is symmetric-only (I3 deferred to v0.4)
 
 Milestone review found the 10k round-trip property masked a real emitter divergence: emitGraphql never emitted root etag while emitSqlJson did, and both normalizers hardcoded rootNocheck:false — so ~50% of random IRs "passed" equivalence by ignoring the disagreeing field. Closed: GraphQL now emits a root-level @nocheck for root.etag:"nocheck"; both normalizers parse rootNocheck from the actual output; the 10k property now genuinely asserts root-etag equivalence and exercises repeated-table M1 aliasing. KNOWN IR LIMITATION (I3, deferred to v0.4 live-deploy): NestedField.link is a single column array applied to BOTH join sides; real FKs with differently-named parent/child columns cannot yet be expressed. v0.4 must split link into from/to (or equivalent) before live deploy can join correctly.

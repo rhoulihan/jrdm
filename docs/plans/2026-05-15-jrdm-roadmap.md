@@ -245,6 +245,8 @@ These hold for every milestone and are checked at the end of each:
 - Drag-drop state model can get hairy — settle on Zustand stores per pane with a single "selection" store coordinating across panes.
 
 > v0.3a complete: dual-syntax (SQL/JSON + GraphQL) duality-view emitter with full nested emission, collision-safe aliasing (closes carried-debt M1), fast-check 10k round-trip equivalence, validator duality-view rules, and a syntax-selectable /api/ddl/preview. v0.3b (document-tree drag-drop editor + DDL pane toggle) is next.
+>
+> v0.3b complete: browser duality-view authoring — drag entity columns into a document-tree, edit every annotation via Field/View inspectors, live DDL pane toggling SQL/JSON ⇄ GraphQL over the v0.3a engine. Closes the v0.2b-review IssuesPanel.focus carried debt. v0.3 (Document Editor + GraphQL Emitter) is fully delivered (v0.3a engine + v0.3b UI). I3 (asymmetric join columns) remains deferred to v0.4 — live deploy must split NestedField.link into from/to before joins are correct against real FKs.
 
 ---
 
