@@ -8,6 +8,7 @@ import { importOracleRoute } from "./routes/import-oracle";
 import { sampleRoute } from "./routes/sample";
 import { documentRoute } from "./routes/document";
 import { sandboxRoute } from "./routes/sandbox";
+import { staticWebRoute } from "./routes/static-web";
 
 export async function buildApp() {
   const app = Fastify({ logger: false });
@@ -19,5 +20,8 @@ export async function buildApp() {
   await app.register(sampleRoute, { prefix: "/api" });
   await app.register(documentRoute, { prefix: "/api" });
   await app.register(sandboxRoute, { prefix: "/api" });
+  // staticWebRoute is registered last so all /api routes always take precedence.
+  // When apps/web/dist is absent (dev/test), this is a graceful no-op.
+  await app.register(staticWebRoute);
   return app;
 }
