@@ -122,9 +122,11 @@ test("nested authoring: + array → drop column into it → nested child + DDL",
   await page.getByRole("button", { name: "+ array" }).click();
   await expect(page.getByTestId("field-1")).toHaveText(/new_array \(array orders\)/);
 
-  // the new nested field is selected → FieldInspector open; set its table + link
+  // the new nested field is selected → FieldInspector open; set its table +
+  // asymmetric link (I3: link.from = parent cols, link.to = child cols)
   await page.getByLabel(/^table$/i).fill("order_items");
-  await page.getByLabel(/link/i).fill("order_id");
+  await page.getByTestId("link-from").fill("order_id");
+  await page.getByTestId("link-to").fill("order_id");
 
   // cross-pane drag UX (ERD↔doc) is a later milestone; here we exercise FieldNode.onDrop directly
   await page.locator('[data-testid="field-1"]').evaluate((el) => {
