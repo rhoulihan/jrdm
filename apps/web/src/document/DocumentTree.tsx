@@ -1,8 +1,20 @@
+import type { DragEvent } from "react";
 import { useJrdmStore } from "../state/store";
 import { FieldNode } from "./FieldNode";
+import { DRAG_MIME, parseDragPayload } from "./dropTarget";
+import { scalarField, addField } from "./documentModel";
 
 export function DocumentTree() {
   const view = useJrdmStore((s) => s.editingView);
+  const setEditingView = useJrdmStore((s) => s.setEditingView);
+
+  function onDrop(e: DragEvent<HTMLDivElement>) {
+    e.preventDefault();
+    const raw = e.dataTransfer.getData(DRAG_MIME);
+    const drag = parseDragPayload(raw);
+    if (!drag || !view) return;
+    setEditingView(addField(view, [], scalarField(drag.column, drag.table, drag.column)));
+  }
 
   if (!view) {
     return (
@@ -13,7 +25,12 @@ export function DocumentTree() {
   }
 
   return (
-    <div className="p-3 text-sm h-full overflow-auto" data-testid="doctree">
+    <div
+      className="p-3 text-sm h-full overflow-auto"
+      data-testid="doctree"
+      onDragOver={(e) => e.preventDefault()}
+      onDrop={onDrop}
+    >
       <div data-testid="doctree-root" className="mb-2">
         <div className="font-semibold text-accent">
           {view.schema}.{view.name}

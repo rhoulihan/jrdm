@@ -1,6 +1,7 @@
 import { Handle, Position, type NodeProps } from "@xyflow/react";
 import { useJrdmStore } from "../state/store";
 import type { EntityNodeData } from "./projectToGraph";
+import { DRAG_MIME } from "../document/dropTarget";
 
 export function EntityNode(props: NodeProps & { data: EntityNodeData }) {
   const { id, data } = props;
@@ -28,7 +29,15 @@ export function EntityNode(props: NodeProps & { data: EntityNodeData }) {
             <li
               key={c.name}
               data-testid={`col-${c.name}`}
-              className="flex justify-between px-3 py-0.5 border-t border-jrdm-border"
+              draggable
+              onDragStart={(e) => {
+                e.dataTransfer.setData(
+                  DRAG_MIME,
+                  JSON.stringify({ table: entity.name, column: c.name }),
+                );
+                e.dataTransfer.effectAllowed = "copy";
+              }}
+              className="flex justify-between px-3 py-0.5 border-t border-jrdm-border cursor-grab"
             >
               <span>{c.name}</span>
               <span className="text-jrdm-muted">

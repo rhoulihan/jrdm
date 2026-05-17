@@ -65,4 +65,9 @@ describe("EntityNode", () => {
     await userEvent.click(screen.getByText("orders"));
     expect(useJrdmStore.getState().selectedEntity).toBe("app.orders");
   });
+
+  it("column <li> elements are draggable", () => {
+    renderNode();
+    expect(screen.getByTestId("col-order_id")).toHaveAttribute("draggable");
+  });
 });
