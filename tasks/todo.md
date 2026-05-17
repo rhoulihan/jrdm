@@ -115,14 +115,14 @@ Detailed plan: [`docs/plans/2026-05-15-jrdm-v0.1-spike.md`](../docs/plans/2026-0
 - [x] Tree a11y (role=tree/treeitem, aria, ArrowUp/Down)
 - [x] Nested-authoring e2e
 
-### v0.4 — Live Oracle Preview + ETag Round-Trip (Weeks 7–8) — NEXT
+### v0.4 — Live Oracle Preview + ETag Round-Trip (Weeks 7–8) — DONE
 
 ## v0.4 — Live Oracle Preview + ETag Round-Trip (Weeks 7–8)
 
-- [ ] Draft v0.4 plan
-- [ ] Rick reviews
-- [ ] Execute
-- [ ] v0.4 DoD: single-click deploy + sample + edit + conflict demo all working; one-button teardown
+- [x] Draft v0.4 plan
+- [x] Rick reviews
+- [x] Execute
+- [x] v0.4 DoD: single-click deploy + sample + edit + conflict demo all working; one-button teardown (idempotent teardown integration-verified); **I3 closed** — duality `link` is now asymmetric `{ from, to }`
 
 ## v0.5 — MongoDB Inference + Suggested Duality View (Weeks 9–10)
 
