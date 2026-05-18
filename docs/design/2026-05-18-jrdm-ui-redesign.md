@@ -124,11 +124,13 @@ Most leaf components (EntityNode, FieldNode, DdlPane internals, preview/*) **sur
 
 Each phase ships working software, is independently reviewable, and ends with the independent milestone-review gate verifying reachability + no regression on the exact main HEAD.
 
-## 10. Open decisions for review (let's lock these before Phase 0)
+## 10. Decisions — LOCKED 2026-05-18 (Rick reviewed wireframes)
 
-1. **Document-canvas zoom mechanism** — (A, recommended) lightweight CSS-transform pan/zoom viewport wrapping the existing accessible `DocumentTree` (keeps the v0.3b.1 ARIA tree + keyboard nav, minimal risk); vs (B) re-render the document as a React Flow graph (visually consistent zoom/minimap with the ERD, but loses the native tree semantics and is a bigger change).
-2. **Inspector** — (A, recommended) right-edge slide-over drawer (zero canvas cost, demo-clean); vs (B) a docked, collapsible right column (always-available for power users, costs width).
-3. **DDL/Issues placement** — (A, recommended) collapsible **bottom** dock (full-width DDL is nice for long statements); vs (B) a tab inside the right region.
-4. **Splitter orientation option** — vertical split only, or also offer a horizontal (ERD top / document bottom) toggle for ultrawide vs portrait? (Recommend: ship vertical; add the toggle in Phase 5 if wanted.)
+1. **Document-canvas zoom** → **CSS-transform pan/zoom viewport** wrapping the existing accessible `DocumentTree` (keeps the v0.3b.1 ARIA tree + keyboard nav; lowest risk). React-Flow-tree option rejected.
+2. **Inspector** → **right-edge slide-over drawer** (opens on selection, pinnable; zero permanent canvas cost). Docked-column option rejected.
+3. **DDL / Issues / Deploy-results** → **collapsible full-width bottom dock**, collapsed by default to a thin strip. Right-region-tab option rejected.
+4. **Splitter** → **vertical only** for now (ERD ╎ document). Optional horizontal (ERD-top / doc-bottom) toggle deferred to the Phase-5 polish pass (build only if wanted then).
+
+These are now binding for the build plan; the phases in §9 stand unchanged.
 
 I'll fold your answers into a build plan (`docs/plans/…-v0.5-ui-shell.md`) and we execute Phase 0 first.
