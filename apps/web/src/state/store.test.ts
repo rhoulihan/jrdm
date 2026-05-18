@@ -29,11 +29,39 @@ describe("useJrdmStore", () => {
     expect(s.issues).toEqual([]);
   });
 
+  it("importToken defaults to 0", () => {
+    expect(useJrdmStore.getState().importToken).toBe(0);
+  });
+
   it("setImport stores project, relationships, issues", () => {
     useJrdmStore.getState().setImport({ project, relationships: rels, issues: [] });
     const s = useJrdmStore.getState();
     expect(s.project?.name).toBe("imported");
     expect(s.relationships).toEqual([]);
+  });
+
+  it("setImport increments importToken", () => {
+    expect(useJrdmStore.getState().importToken).toBe(0);
+    useJrdmStore.getState().setImport({ project, relationships: rels, issues: [] });
+    expect(useJrdmStore.getState().importToken).toBe(1);
+  });
+
+  it("two successive setImport calls yield strictly increasing importToken", () => {
+    useJrdmStore.getState().setImport({ project, relationships: rels, issues: [] });
+    const token1 = useJrdmStore.getState().importToken;
+    useJrdmStore.getState().setImport({ project, relationships: rels, issues: [] });
+    const token2 = useJrdmStore.getState().importToken;
+    expect(token2).toBeGreaterThan(token1);
+    expect(token1).toBe(1);
+    expect(token2).toBe(2);
+  });
+
+  it("reset restores importToken to 0", () => {
+    useJrdmStore.getState().setImport({ project, relationships: rels, issues: [] });
+    useJrdmStore.getState().setImport({ project, relationships: rels, issues: [] });
+    expect(useJrdmStore.getState().importToken).toBe(2);
+    useJrdmStore.getState().reset();
+    expect(useJrdmStore.getState().importToken).toBe(0);
   });
 
   it("selectEntity sets the selection; clearing works", () => {

@@ -10,15 +10,16 @@ import type { GraphNode, GraphEdge } from "./projectToGraph";
 export function DiagramPane() {
   const project = useJrdmStore((s) => s.project);
   const relationships = useJrdmStore((s) => s.relationships);
+  const importToken = useJrdmStore((s) => s.importToken);
 
   const [nodes, setNodes, onNodesChange] = useNodesState<GraphNode>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<GraphEdge>([]);
 
-  // Re-seed layout ONLY when a new import arrives (project identity changes).
-  // Uses a stable key: project name + entity count so user drags persist across
-  // unrelated store updates but a fresh import triggers a full re-layout.
-  const projectKey = project ? `${project.name}:${project.entities.length}` : null;
-
+  // Re-seed layout ONLY when a new import arrives.
+  // Keyed on importToken — a monotonically-incrementing counter bumped atomically
+  // with every setImport call. Guarantees that importing schema B after schema A
+  // always re-seeds even when name and entity count are identical.
+  // User drags are preserved across unrelated re-renders (token unchanged).
   useEffect(() => {
     if (!project) {
       setNodes([]);
@@ -28,7 +29,7 @@ export function DiagramPane() {
     const graph = projectToGraph(project, relationships);
     setNodes(graph.nodes);
     setEdges(graph.edges);
-  }, [projectKey]); // intentionally keyed on project identity only — setNodes/setEdges are stable
+  }, [importToken]); // intentionally keyed on importToken only — setNodes/setEdges are stable
 
   const nodeTypes = useMemo(() => ({ entity: EntityNode }), []);
   const edgeTypes = useMemo(() => ({ relationship: RelationshipEdge }), []);
