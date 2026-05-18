@@ -169,6 +169,17 @@ describe("useJrdmStore — preview slice", () => {
     expect(useJrdmStore.getState().conflict).toBeNull();
   });
 
+  it("reset clears schema slice", () => {
+    useJrdmStore.getState().setSchemas(["APP", "SALES"]);
+    useJrdmStore.getState().selectSchema("APP");
+    useJrdmStore.getState().setSchemaLoad("loading");
+    useJrdmStore.getState().reset();
+    const s = useJrdmStore.getState();
+    expect(s.schemas).toEqual([]);
+    expect(s.selectedSchema).toBeNull();
+    expect(s.schemaLoad).toBe("idle");
+  });
+
   it("reset clears preview slice (no stale conflict across projects)", () => {
     useJrdmStore.getState().setDeployState("deployed", "2 statements");
     useJrdmStore.getState().setSampleDocs([{ _id: 1 }]);
@@ -183,5 +194,48 @@ describe("useJrdmStore — preview slice", () => {
     expect(s.sampleDocs).toEqual([]);
     expect(s.selectedDocId).toBeNull();
     expect(s.conflict).toBeNull();
+  });
+});
+
+describe("useJrdmStore — schema slice", () => {
+  beforeEach(() => useJrdmStore.getState().reset());
+
+  it("defaults: schemas [], selectedSchema null, schemaLoad idle", () => {
+    const s = useJrdmStore.getState();
+    expect(s.schemas).toEqual([]);
+    expect(s.selectedSchema).toBeNull();
+    expect(s.schemaLoad).toBe("idle");
+  });
+
+  it("setSchemas stores the array", () => {
+    useJrdmStore.getState().setSchemas(["APP", "SALES"]);
+    expect(useJrdmStore.getState().schemas).toEqual(["APP", "SALES"]);
+  });
+
+  it("selectSchema sets selectedSchema; clearing works", () => {
+    useJrdmStore.getState().selectSchema("APP");
+    expect(useJrdmStore.getState().selectedSchema).toBe("APP");
+    useJrdmStore.getState().selectSchema(null);
+    expect(useJrdmStore.getState().selectedSchema).toBeNull();
+  });
+
+  it("setSchemaLoad transitions through loading/error/idle", () => {
+    useJrdmStore.getState().setSchemaLoad("loading");
+    expect(useJrdmStore.getState().schemaLoad).toBe("loading");
+    useJrdmStore.getState().setSchemaLoad("error");
+    expect(useJrdmStore.getState().schemaLoad).toBe("error");
+    useJrdmStore.getState().setSchemaLoad("idle");
+    expect(useJrdmStore.getState().schemaLoad).toBe("idle");
+  });
+
+  it("reset clears schema slice to SCHEMA_DEFAULTS", () => {
+    useJrdmStore.getState().setSchemas(["APP", "SALES"]);
+    useJrdmStore.getState().selectSchema("APP");
+    useJrdmStore.getState().setSchemaLoad("error");
+    useJrdmStore.getState().reset();
+    const s = useJrdmStore.getState();
+    expect(s.schemas).toEqual([]);
+    expect(s.selectedSchema).toBeNull();
+    expect(s.schemaLoad).toBe("idle");
   });
 });
