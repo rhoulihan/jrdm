@@ -72,7 +72,7 @@ export function ConnectionForm({
       />
       <button
         type="button"
-        data-testid="connect-btn"
+        data-testid="form-connect-btn"
         disabled={connectDisabled}
         onClick={() => {
           void handleConnect();
