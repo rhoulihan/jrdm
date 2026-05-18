@@ -300,6 +300,36 @@ describe("MapToDocumentModal", () => {
     expect(screen.getByTestId("mnode-1")).toBeInTheDocument();
   });
 
+  it("Map to Path button is disabled (with tooltip) when a locked pre-existing node is selected, and enabled for a session-new node", async () => {
+    const user = userEvent.setup();
+    seedStore({ table: "ORDER_ITEMS", editingView: ORDERS_VIEW, relationships: [REL_1N] });
+    render(<MapToDocumentModal />);
+
+    const mapBtn = screen.getByTestId("map-to-path-btn");
+
+    // Check a column first so the only remaining disqualifier is the locked selection.
+    await user.click(screen.getByTestId("field-sku"));
+
+    // Select a locked pre-existing node (mnode-1 = "status").
+    await user.click(screen.getByTestId("mnode-1"));
+
+    // Button must be disabled and carry the locked tooltip.
+    expect(mapBtn).toBeDisabled();
+    expect(mapBtn).toHaveAttribute("title", "Can't map into a pre-existing (locked) node");
+
+    // Add a session-new node (adds ORDER_ITEMS array under root).
+    await user.click(screen.getByTestId("mnode-0"));
+    await user.click(screen.getByTestId("add-node-btn"));
+    // The new node is auto-selected (mnode-2) — not locked → button should be enabled.
+    expect(screen.getByTestId("mnode-2")).toBeInTheDocument();
+    expect(mapBtn).toBeEnabled();
+
+    // Clicking "Map to Path" on the session-new node must work (scalars appended).
+    await user.click(mapBtn);
+    const tree = screen.getByTestId("mapping-tree");
+    expect(within(tree).getByText("ORDER_ITEMS.sku")).toBeInTheDocument();
+  });
+
   it("delete removes a session-created node", async () => {
     const user = userEvent.setup();
     seedStore({ table: "ORDER_ITEMS", editingView: ORDERS_VIEW, relationships: [REL_1N] });

@@ -83,6 +83,8 @@ export function mapColumns(
   table: string,
   columns: string[],
 ): WorkingCopy {
+  // Locked-node boundary: pre-existing nodes cannot receive new children (no-op).
+  if (isLocked(wc, targetPath)) return wc;
   let view = wc.view;
   for (const col of columns) {
     view = addField(view, targetPath, scalarField(col, table, col));

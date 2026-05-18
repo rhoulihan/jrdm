@@ -7,6 +7,7 @@ import { MappingTree } from "./MappingTree";
 import {
   type WorkingCopy,
   seedWorkingCopy,
+  isLocked,
   addNode,
   deleteNode,
   mapColumns,
@@ -75,7 +76,7 @@ export function MapToDocumentModal() {
 
   // The columns currently bound by "Map to Path".
   const checkedColumns = selectAll ? columns.map((c) => c.name) : [...checked];
-  const canMap = checkedColumns.length > 0 && selectedPath !== null;
+  const canMap = checkedColumns.length > 0 && selectedPath !== null && !isLocked(wc, selectedPath);
 
   // ── Left: Field checklist handlers ────────────────────────────────────────
   function onToggleColumn(name: string) {
@@ -248,7 +249,9 @@ export function MapToDocumentModal() {
               title={
                 canMap
                   ? "Bind checked columns under the selected node"
-                  : "Check columns and select a node first"
+                  : selectedPath !== null && isLocked(wc, selectedPath)
+                    ? "Can't map into a pre-existing (locked) node"
+                    : "Check columns and select a node first"
               }
             >
               Map to Path ▶

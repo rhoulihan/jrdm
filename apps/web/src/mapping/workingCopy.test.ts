@@ -141,6 +141,22 @@ describe("deleteNode — locked-node boundary", () => {
 });
 
 describe("mapColumns", () => {
+  it("rejects mapColumns onto a locked node — returns working copy unchanged", () => {
+    // Path [2] = the pre-existing "shipping" nested node (locked).
+    const wc = seedWorkingCopy(preexisting);
+    const before = toDualityView(wc);
+    const after = mapColumns(wc, [2], "addresses", ["zip", "country"]);
+    // The returned WorkingCopy must deep-equal the input — the locked node
+    // must NOT have gained any children. This assertion FAILS if the guard is
+    // removed because addField would append scalars under shipping.
+    expect(toDualityView(after)).toEqual(before);
+    // Belt-and-suspenders: the locked node's fields list is unchanged.
+    const shipping = toDualityView(after).fields[2];
+    expect(shipping && "fields" in shipping && shipping.fields).toEqual([
+      { key: "city", source: "addresses.city" },
+    ]);
+  });
+
   it("maps checked columns as scalarField children under a target node", () => {
     const wc = seedWorkingCopy(preexisting);
     const wc2 = addNode(wc, null, { key: "items", kind: "array", table: "order_items" });
