@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
 import {
   importOracle,
+  listSchemas,
   fetchDdlPreview,
   deployView,
   sampleDocuments,
@@ -61,6 +62,63 @@ describe("importOracle", () => {
       ),
     );
     await expect(importOracle(body)).rejects.toMatchObject({ status: 502 });
+  });
+});
+
+const connection = { user: "u", password: "p", connectString: "h:1521/FREEPDB1" };
+
+describe("listSchemas", () => {
+  afterEach(() => vi.restoreAllMocks());
+
+  it("POSTs to /api/schemas and returns string[] on 200", async () => {
+    const schemas = ["APP", "SALES"];
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(() => Promise.resolve(new Response(JSON.stringify({ schemas }), { status: 200 }))),
+    );
+    const result = await listSchemas(connection);
+    expect(result).toEqual(["APP", "SALES"]);
+    const call = (globalThis.fetch as unknown as { mock: { calls: unknown[][] } }).mock.calls[0]!;
+    expect(call[0]).toBe("/api/schemas");
+    expect((call[1] as RequestInit).method).toBe("POST");
+    const sent = JSON.parse((call[1] as { body: string }).body) as {
+      connection: typeof connection;
+    };
+    expect(sent.connection).toEqual(connection);
+  });
+
+  it("throws ApiError(400) with message from {error} field on non-ok", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(() =>
+        Promise.resolve(
+          new Response(JSON.stringify({ error: "invalid_request" }), { status: 400 }),
+        ),
+      ),
+    );
+    await expect(listSchemas(connection)).rejects.toMatchObject({
+      name: "ApiError",
+      status: 400,
+      message: "invalid_request",
+    });
+  });
+
+  it("throws ApiError(502) with message from {message} field", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(() =>
+        Promise.resolve(
+          new Response(
+            JSON.stringify({ error: "schemas_failed", message: "ORA-12541: no listener" }),
+            { status: 502 },
+          ),
+        ),
+      ),
+    );
+    const err = await listSchemas(connection).catch((e: unknown) => e);
+    expect(err).toBeInstanceOf(ApiError);
+    expect((err as ApiError).status).toBe(502);
+    expect((err as ApiError).message).toBe("ORA-12541: no listener");
   });
 });
 

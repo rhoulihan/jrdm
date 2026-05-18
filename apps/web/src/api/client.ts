@@ -32,6 +32,21 @@ async function throwIfNotOk(res: Response): Promise<void> {
   }
 }
 
+export async function listSchemas(connection: {
+  user: string;
+  password: string;
+  connectString: string;
+}): Promise<string[]> {
+  const res = await fetch("/api/schemas", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ connection }),
+  });
+  await throwIfNotOk(res);
+  const j = (await res.json()) as { schemas: string[] };
+  return j.schemas;
+}
+
 export async function importOracle(req: ImportRequest): Promise<ImportPayload> {
   const res = await fetch("/api/import/oracle", {
     method: "POST",

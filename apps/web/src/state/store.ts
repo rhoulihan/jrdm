@@ -34,6 +34,10 @@ interface JrdmState {
   sampleDocs: unknown[];
   selectedDocId: string | number | null;
   conflict: { message: string } | null;
+  // schema slice
+  schemas: string[];
+  selectedSchema: string | null;
+  schemaLoad: "idle" | "loading" | "error";
   setConnection: (patch: Partial<ConnectionDraft>) => void;
   setImport: (p: ImportPayload) => void;
   selectEntity: (name: string | null) => void;
@@ -46,6 +50,9 @@ interface JrdmState {
   setSampleDocs: (d: unknown[]) => void;
   selectDoc: (id: string | number | null) => void;
   setConflict: (c: { message: string } | null) => void;
+  setSchemas: (schemas: string[]) => void;
+  selectSchema: (schema: string | null) => void;
+  setSchemaLoad: (state: "idle" | "loading" | "error") => void;
   reset: () => void;
 }
 
@@ -72,6 +79,12 @@ const PREVIEW_DEFAULTS = {
   conflict: null as { message: string } | null,
 } as const;
 
+const SCHEMA_DEFAULTS = {
+  schemas: [] as string[],
+  selectedSchema: null as string | null,
+  schemaLoad: "idle" as const,
+};
+
 export const useJrdmStore = create<JrdmState>((set) => ({
   connection: { ...EMPTY_CONNECTION },
   project: null,
@@ -80,6 +93,7 @@ export const useJrdmStore = create<JrdmState>((set) => ({
   selectedEntity: null,
   ...AUTHORING_DEFAULTS,
   ...PREVIEW_DEFAULTS,
+  ...SCHEMA_DEFAULTS,
   setConnection: (patch) => set((s) => ({ connection: { ...s.connection, ...patch } })),
   setImport: (p) => set({ project: p.project, relationships: p.relationships, issues: p.issues }),
   selectEntity: (name) => set({ selectedEntity: name }),
@@ -106,6 +120,9 @@ export const useJrdmStore = create<JrdmState>((set) => ({
   setSampleDocs: (d) => set({ sampleDocs: d }),
   selectDoc: (id) => set({ selectedDocId: id }),
   setConflict: (c) => set({ conflict: c }),
+  setSchemas: (schemas) => set({ schemas }),
+  selectSchema: (schema) => set({ selectedSchema: schema }),
+  setSchemaLoad: (state) => set({ schemaLoad: state }),
   reset: () =>
     set({
       connection: { ...EMPTY_CONNECTION },
@@ -115,5 +132,6 @@ export const useJrdmStore = create<JrdmState>((set) => ({
       selectedEntity: null,
       ...AUTHORING_DEFAULTS,
       ...PREVIEW_DEFAULTS,
+      ...SCHEMA_DEFAULTS,
     }),
 }));
