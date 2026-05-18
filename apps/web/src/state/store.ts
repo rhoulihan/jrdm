@@ -47,6 +47,8 @@ interface JrdmState {
   schemas: string[];
   selectedSchema: string | null;
   schemaLoad: "idle" | "loading" | "error";
+  // mapping slice (ephemeral — Map-to-Document modal; not persisted)
+  mapping: { open: boolean; table: string | null };
   setConnection: (patch: Partial<ConnectionDraft>) => void;
   setImport: (p: ImportPayload) => void;
   selectEntity: (name: string | null) => void;
@@ -68,6 +70,8 @@ interface JrdmState {
   setSchemas: (schemas: string[]) => void;
   selectSchema: (schema: string | null) => void;
   setSchemaLoad: (state: "idle" | "loading" | "error") => void;
+  openMapping: (table: string) => void;
+  closeMapping: () => void;
   reset: () => void;
 }
 
@@ -165,6 +169,10 @@ const SCHEMA_DEFAULTS = {
   schemaLoad: "idle" as const,
 };
 
+const MAPPING_DEFAULTS = {
+  mapping: { open: false, table: null as string | null },
+} as const;
+
 const initialLayout = readPersistedLayout();
 
 export const useJrdmStore = create<JrdmState>((set, get) => ({
@@ -177,6 +185,7 @@ export const useJrdmStore = create<JrdmState>((set, get) => ({
   ...AUTHORING_DEFAULTS,
   ...PREVIEW_DEFAULTS,
   ...SCHEMA_DEFAULTS,
+  mapping: { ...MAPPING_DEFAULTS.mapping },
   // layout slice — persisted keys seeded from localStorage
   splitRatio: initialLayout.splitRatio,
   splitCollapsed: initialLayout.splitCollapsed,
@@ -261,6 +270,8 @@ export const useJrdmStore = create<JrdmState>((set, get) => ({
   setSchemas: (schemas) => set({ schemas }),
   selectSchema: (schema) => set({ selectedSchema: schema }),
   setSchemaLoad: (state) => set({ schemaLoad: state }),
+  openMapping: (table) => set({ mapping: { open: true, table } }),
+  closeMapping: () => set({ mapping: { open: false, table: null } }),
   reset: () =>
     set({
       connection: { ...EMPTY_CONNECTION },
@@ -272,5 +283,6 @@ export const useJrdmStore = create<JrdmState>((set, get) => ({
       ...AUTHORING_DEFAULTS,
       ...PREVIEW_DEFAULTS,
       ...SCHEMA_DEFAULTS,
+      mapping: { ...MAPPING_DEFAULTS.mapping },
     }),
 }));

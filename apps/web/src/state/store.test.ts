@@ -368,3 +368,29 @@ describe("useJrdmStore — schema slice", () => {
     expect(s.schemaLoad).toBe("idle");
   });
 });
+
+describe("useJrdmStore — mapping slice", () => {
+  beforeEach(() => useJrdmStore.getState().reset());
+
+  it("defaults: mapping closed with null table", () => {
+    const s = useJrdmStore.getState();
+    expect(s.mapping).toEqual({ open: false, table: null });
+  });
+
+  it("openMapping opens the modal for a given table", () => {
+    useJrdmStore.getState().openMapping("ORDER_ITEMS");
+    expect(useJrdmStore.getState().mapping).toEqual({ open: true, table: "ORDER_ITEMS" });
+  });
+
+  it("closeMapping closes the modal and clears the table", () => {
+    useJrdmStore.getState().openMapping("ORDER_ITEMS");
+    useJrdmStore.getState().closeMapping();
+    expect(useJrdmStore.getState().mapping).toEqual({ open: false, table: null });
+  });
+
+  it("reset clears the mapping slice", () => {
+    useJrdmStore.getState().openMapping("ORDERS");
+    useJrdmStore.getState().reset();
+    expect(useJrdmStore.getState().mapping).toEqual({ open: false, table: null });
+  });
+});
