@@ -1,0 +1,87 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="900" viewBox="0 0 1440 900" font-family="Segoe UI, Helvetica, Arial, sans-serif">
+  <rect width="1440" height="900" fill="#FAF9F7"/>
+  <rect x="0" y="0" width="1440" height="40" fill="#FFFFFF" stroke="#E3E0DB"/>
+  <circle cx="26" cy="20" r="8" fill="#C74634"/><text x="44" y="25" font-size="15" font-weight="700" fill="#1A1A1A">JRDM</text>
+  <text x="120" y="25" font-size="14" fill="#1A1A1A">Project ▾   Connection ▾   Deploy ▾   View ▾   Help ▾</text>
+  <rect x="0" y="40" width="1440" height="860" fill="#1A1A1A" opacity="0.45"/>
+  <text x="60" y="70" font-size="12" fill="#FFFFFF" opacity="0.85">trigger: drag table ORDER_ITEMS from ERD (left) → drop on document canvas (right) → modal opens</text>
+
+  <!-- MODAL -->
+  <rect x="170" y="108" width="1100" height="690" rx="10" fill="#FFFFFF" stroke="#E3E0DB"/>
+  <rect x="170" y="108" width="1100" height="54" rx="10" fill="#FFFFFF"/>
+  <text x="200" y="142" font-size="18" font-weight="700" fill="#1A1A1A">Map “ORDER_ITEMS” to Document</text>
+  <text x="1232" y="141" font-size="18" fill="#6B6B6B">✕</text>
+  <line x1="170" y1="162" x2="1270" y2="162" stroke="#E3E0DB"/>
+
+  <!-- LEFT: Fields -->
+  <text x="200" y="190" font-size="12" font-weight="700" fill="#6B6B6B" letter-spacing="1">FIELDS</text>
+  <rect x="200" y="202" width="330" height="40" rx="6" fill="#FAF9F7" stroke="#C74634"/>
+  <rect x="214" y="214" width="16" height="16" rx="3" fill="#C74634"/><text x="218" y="227" font-size="12" fill="#FFFFFF">✓</text>
+  <text x="242" y="227" font-size="13" font-weight="700" fill="#1A1A1A">Select All</text>
+  <text x="408" y="227" font-size="11" fill="#6B6B6B">(grays list ↓)</text>
+  <rect x="200" y="250" width="330" height="476" rx="6" fill="#FFFFFF" stroke="#E3E0DB"/>
+  <g font-size="13">
+    <rect x="216" y="266" width="16" height="16" rx="3" fill="#FFFFFF" stroke="#C74634"/><text x="220" y="279" font-size="11" fill="#C74634">✓</text>
+    <text x="244" y="279" fill="#1A1A1A">id</text><text x="460" y="279" font-size="11" fill="#6B6B6B">NUMBER</text>
+    <rect x="216" y="298" width="16" height="16" rx="3" fill="#FFFFFF" stroke="#C74634"/><text x="220" y="311" font-size="11" fill="#C74634">✓</text>
+    <text x="244" y="311" fill="#1A1A1A">order_id</text><text x="460" y="311" font-size="11" fill="#6B6B6B">NUMBER</text>
+    <rect x="216" y="330" width="16" height="16" rx="3" fill="#FFFFFF" stroke="#E3E0DB"/>
+    <text x="244" y="343" fill="#1A1A1A">sku</text><text x="448" y="343" font-size="11" fill="#6B6B6B">VARCHAR2</text>
+    <rect x="216" y="362" width="16" height="16" rx="3" fill="#FFFFFF" stroke="#C74634"/><text x="220" y="375" font-size="11" fill="#C74634">✓</text>
+    <text x="244" y="375" fill="#1A1A1A">qty</text><text x="460" y="375" font-size="11" fill="#6B6B6B">NUMBER</text>
+    <rect x="216" y="394" width="16" height="16" rx="3" fill="#FFFFFF" stroke="#E3E0DB"/>
+    <text x="244" y="407" fill="#1A1A1A">price</text><text x="460" y="407" font-size="11" fill="#6B6B6B">NUMBER</text>
+    <text x="244" y="443" fill="#6B6B6B">discount</text>
+    <text x="244" y="475" fill="#6B6B6B">tax_code</text>
+    <text x="244" y="507" fill="#6B6B6B">created_ts</text>
+    <text x="216" y="706" font-size="11" fill="#6B6B6B">…scrollable…</text>
+  </g>
+
+  <!-- MIDDLE: Map to Path -->
+  <rect x="566" y="430" width="108" height="74" rx="8" fill="#C74634"/>
+  <text x="588" y="462" font-size="13" font-weight="700" fill="#FFFFFF">Map</text>
+  <text x="596" y="480" font-size="13" font-weight="700" fill="#FFFFFF">to</text>
+  <text x="588" y="498" font-size="13" font-weight="700" fill="#FFFFFF">Path</text>
+  <path d="M530 380 C 548 410 548 450 566 460" fill="none" stroke="#C74634" stroke-width="2" stroke-dasharray="4 4"/>
+  <path d="M674 470 C 696 470 700 400 712 372" fill="none" stroke="#C74634" stroke-width="2" stroke-dasharray="4 4"/>
+  <text x="556" y="540" font-size="11" fill="#6B6B6B">checked cols</text>
+  <text x="556" y="556" font-size="11" fill="#6B6B6B">→ selected node</text>
+
+  <!-- RIGHT: Document tree (no drag — build via +/-) -->
+  <text x="700" y="190" font-size="12" font-weight="700" fill="#6B6B6B" letter-spacing="1">DOCUMENT</text>
+  <rect x="700" y="202" width="540" height="404" rx="6" fill="#FFFFFF" stroke="#E3E0DB"/>
+  <g font-size="13">
+    <text x="718" y="230" font-weight="700" fill="#1A1A1A">▾ orders</text>
+    <text x="880" y="230" font-size="11" fill="#6B6B6B">root · ORDERS · 🔒 pre-existing</text>
+    <text x="744" y="258" fill="#6B6B6B">• _id        🔒</text>
+    <text x="744" y="284" fill="#6B6B6B">• status     🔒</text>
+    <!-- newly created node via + add node (selected = target path) -->
+    <rect x="730" y="300" width="494" height="30" rx="5" fill="#FAF9F7" stroke="#C74634"/>
+    <text x="744" y="320" font-weight="700" fill="#C74634">▾ items   ◀ new · selected (target path)</text>
+    <text x="744" y="356" fill="#6B6B6B" font-size="12">created via “+ add node” with “orders” selected → subnode of orders</text>
+    <text x="744" y="380" fill="#6B6B6B" font-size="12">(no selection + “+ add node” → new ROOT node)</text>
+    <text x="744" y="404" fill="#1A1A1A" font-size="12">↳ click “Map to Path” to fill this node with the checked columns</text>
+  </g>
+
+  <!-- embed as array (auto from FK) -->
+  <rect x="700" y="618" width="540" height="44" rx="6" fill="#FAF9F7" stroke="#E3E0DB"/>
+  <rect x="716" y="630" width="18" height="18" rx="3" fill="#C74634"/><text x="721" y="644" font-size="12" fill="#FFFFFF">✓</text>
+  <text x="744" y="644" font-size="13" font-weight="700" fill="#1A1A1A">embed as array</text>
+  <text x="892" y="644" font-size="12" fill="#2E7D32">auto · FK: ORDERS → ORDER_ITEMS (1:N)</text>
+
+  <!-- +/- under the tree -->
+  <rect x="700" y="676" width="150" height="36" rx="5" fill="#FFFFFF" stroke="#C74634"/>
+  <text x="720" y="699" font-size="13" fill="#C74634">＋ add node</text>
+  <rect x="864" y="676" width="150" height="36" rx="5" fill="#FFFFFF" stroke="#E3E0DB"/>
+  <text x="884" y="699" font-size="13" fill="#6B6B6B">－ delete</text>
+  <text x="1026" y="699" font-size="11" fill="#6B6B6B">(− only on session-new nodes)</text>
+  <text x="700" y="736" font-size="11" fill="#6B6B6B">+ : no selection → new ROOT node · node selected → new SUBNODE under it</text>
+
+  <!-- footer -->
+  <line x1="170" y1="752" x2="1270" y2="752" stroke="#E3E0DB"/>
+  <rect x="1008" y="766" width="110" height="38" rx="5" fill="#FFFFFF" stroke="#E3E0DB"/>
+  <text x="1038" y="790" font-size="14" fill="#6B6B6B">Cancel</text>
+  <rect x="1133" y="766" width="120" height="38" rx="5" fill="#C74634"/>
+  <text x="1173" y="790" font-size="14" fill="#FFFFFF">Save</text>
+  <text x="200" y="789" font-size="12" fill="#6B6B6B">Save → entity embedded at that location · main right pane shows the new document with sample data + live DDL · Cancel → discard</text>
+</svg>
