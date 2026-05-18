@@ -9,6 +9,21 @@ global.ResizeObserver = class ResizeObserver {
   disconnect() {}
 };
 
+// Polyfill PointerEvent for jsdom (needed for pointer drag tests)
+if (typeof window.PointerEvent === "undefined") {
+  class PointerEventPolyfill extends MouseEvent {
+    pointerId: number;
+    constructor(type: string, params: PointerEventInit = {}) {
+      super(type, params);
+      this.pointerId = params.pointerId ?? 0;
+    }
+  }
+  Object.defineProperty(window, "PointerEvent", {
+    writable: true,
+    value: PointerEventPolyfill,
+  });
+}
+
 afterEach(() => {
   cleanup();
 });
