@@ -2,6 +2,7 @@ import type { DragEvent, KeyboardEvent as ReactKeyboardEvent } from "react";
 import { useJrdmStore } from "../state/store";
 import { FieldNode } from "./FieldNode";
 import { DRAG_MIME, parseDragPayload } from "./dropTarget";
+import { ENTITY_DRAG_MIME } from "../diagram/EntityNode";
 import {
   scalarField,
   addField,
@@ -19,9 +20,20 @@ export function DocumentTree() {
   const selectedFieldPath = useJrdmStore((s) => s.selectedFieldPath);
   const setEditingView = useJrdmStore((s) => s.setEditingView);
   const selectField = useJrdmStore((s) => s.selectField);
+  const openMapping = useJrdmStore((s) => s.openMapping);
 
   function onDrop(e: DragEvent<HTMLDivElement>) {
     e.preventDefault();
+
+    // Entity drag (application/x-jrdm-entity): open the Map-to-Document modal.
+    // This path takes priority and does NOT also run the column quick-bind path.
+    const entityTable = e.dataTransfer.getData(ENTITY_DRAG_MIME);
+    if (entityTable) {
+      openMapping(entityTable);
+      return;
+    }
+
+    // Column drag (application/x-jrdm-column): existing quick-bind path unchanged.
     const raw = e.dataTransfer.getData(DRAG_MIME);
     const drag = parseDragPayload(raw);
     if (!drag || !view) return;

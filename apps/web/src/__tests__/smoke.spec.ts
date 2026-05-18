@@ -256,6 +256,185 @@ test("nested authoring: + array → drop column into it → nested child + DDL",
 });
 
 // ---------------------------------------------------------------------------
+// v0.5 M.T5 — ERD entity drag → Map modal → Save → embedded sample in deploy dock
+//
+// Payload: ORDERS (PK: order_id) + ORDER_ITEMS (PK: item_id, FK order_id→ORDERS)
+// with a 1:N relationship so the FK-aware embed sets kind="array" automatically.
+//
+// Non-tautological guards (these FAIL if Save didn't transform the view):
+//   (a) doc-row-123 is visible — only appears when sampleDocs is set (setSampleDocs
+//       is only called in onSave); if modal never opened or Save was a no-op, empty.
+//   (b) The doc row text contains "ORDER_ITEMS" — the nested-array key; only present
+//       when the mapping actually embedded ORDER_ITEMS into the view and the sample
+//       generator walked the nested field.
+//   (c) The doc row text contains "SAMPLE0000" — the synthetic etag emitted by
+//       sampleDocument(); only present when sampleDocument() ran on the saved view.
+//   (d) The DDL output mentions "NESTED PATH" — only when editingView has a nested
+//       field (proves the commit to editingView actually happened).
+// ---------------------------------------------------------------------------
+
+const FK_IMPORT_PAYLOAD = {
+  project: {
+    name: "fk-orders",
+    version: "0.1.0",
+    entities: [
+      {
+        name: "ORDERS",
+        schema: "app",
+        columns: [
+          { name: "order_id", type: "NUMBER", nullable: false },
+          { name: "order_status", type: "VARCHAR2", nullable: true },
+        ],
+        primaryKey: ["order_id"],
+        foreignKeys: [],
+      },
+      {
+        name: "ORDER_ITEMS",
+        schema: "app",
+        columns: [
+          { name: "item_id", type: "NUMBER", nullable: false },
+          { name: "order_id", type: "NUMBER", nullable: false },
+          { name: "qty", type: "NUMBER", nullable: true },
+        ],
+        primaryKey: ["item_id"],
+        foreignKeys: [
+          {
+            name: "fk_oi_o",
+            columns: ["order_id"],
+            references: { schema: "app", table: "ORDERS", columns: ["order_id"] },
+          },
+        ],
+      },
+    ],
+    views: [],
+  },
+  // 1:N: ORDERS (PK side) → ORDER_ITEMS (FK side)
+  relationships: [
+    {
+      from: { table: "ORDERS", columns: ["order_id"] },
+      to: { table: "ORDER_ITEMS", columns: ["order_id"] },
+      cardinality: "1:N",
+    },
+  ],
+  issues: [],
+};
+
+test("M.T5 — drag entity onto doc canvas → Map modal → Select-All + add node + Map to Path → Save → embedded sample + DDL updated", async ({
+  page,
+}) => {
+  // Route mocks (JRDM endpoints only — no Oracle)
+  await page.route("**/api/schemas", (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({ schemas: ["APP"] }),
+    }),
+  );
+  await page.route("**/api/import/oracle", (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify(FK_IMPORT_PAYLOAD),
+    }),
+  );
+
+  // Track what the client posts so we can assert nested content in DDL output.
+  let lastDdlBody: { view?: { fields?: Array<{ kind?: string; key?: string }> } } = {};
+  await page.route("**/api/ddl/preview", async (route) => {
+    lastDdlBody = route.request().postDataJSON() as typeof lastDdlBody;
+    const nestedFields = (lastDdlBody.view?.fields ?? []).filter((f) => f.kind !== undefined);
+    const sql =
+      nestedFields.length > 0
+        ? `CREATE OR REPLACE JSON RELATIONAL DUALITY VIEW app.ORDERS_dv AS SELECT * FROM ORDERS NESTED PATH array`
+        : "CREATE OR REPLACE JSON RELATIONAL DUALITY VIEW app.ORDERS_dv AS";
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({ sql }),
+    });
+  });
+
+  await page.goto("/");
+  await connectAndImport(page);
+
+  // Start a view from ORDERS (the root entity)
+  await page.getByText("ORDERS", { exact: true }).first().click();
+  await page.getByRole("button", { name: /design view from/i }).click();
+  await expect(page.getByTestId("doctree")).toBeVisible();
+
+  // Simulate dragging the ORDER_ITEMS entity header onto the document canvas.
+  // We inject the drag event directly (same approach as the nested-authoring scenario)
+  // because Playwright cross-pane HTML5 DnD requires dataTransfer injection.
+  await page.locator('[data-testid="doctree"]').evaluate((el) => {
+    const dt = new DataTransfer();
+    dt.setData("application/x-jrdm-entity", "ORDER_ITEMS");
+    el.dispatchEvent(new DragEvent("dragover", { bubbles: true, dataTransfer: dt }));
+    el.dispatchEvent(new DragEvent("drop", { bubbles: true, dataTransfer: dt }));
+  });
+
+  // The Map-to-Document modal must open, title includes the table name
+  const dialog = page.getByRole("dialog");
+  await expect(dialog).toBeVisible();
+  await expect(dialog).toContainText("ORDER_ITEMS");
+
+  // Select All — grays the field list; all columns selected
+  await dialog.getByTestId("select-all").check();
+  // Confirm the checklist items are present (3 columns)
+  await expect(dialog.getByTestId("field-item_id")).toBeVisible();
+  await expect(dialog.getByTestId("field-order_id")).toBeVisible();
+  await expect(dialog.getByTestId("field-qty")).toBeVisible();
+
+  // Add node — creates the ORDER_ITEMS nested node (FK-aware: auto-selects array)
+  await dialog.getByTestId("add-node-btn").click();
+
+  // The "Map to Path" button should now be enabled (columns selected + node selected)
+  await expect(dialog.getByTestId("map-to-path-btn")).not.toBeDisabled();
+
+  // Map to Path — bind the ORDER_ITEMS columns under the newly created node
+  await dialog.getByTestId("map-to-path-btn").click();
+
+  // Save — commits to editingView + sets sampleDocs
+  await dialog.getByTestId("map-save").click();
+
+  // Modal must be gone
+  await expect(dialog).not.toBeVisible();
+
+  // --- Non-tautological guards ---
+  // (a)+(b)+(c): Open Deploy dock and assert the sample doc row with the embedded key.
+  // _id is seeded from `startNewView` as "ORDERS.id" — entity has no "id" column so
+  // sampleDocument() emits sampleForType(undefined) = "sample" → doc-row-sample.
+  await openDock(page, "Deploy");
+  const dock = page.getByTestId("bottom-dock");
+
+  // doc-row-sample only appears when setSampleDocs([sampleDocument(...)]) was called,
+  // which only happens in onSave. If modal never opened or Save was a no-op, empty.
+  await expect(dock.getByTestId("doc-row-sample")).toBeVisible({ timeout: 5000 });
+
+  // The row text must contain the embedded table key "ORDER_ITEMS" — only present
+  // when the mapping actually committed a nested ORDER_ITEMS field into editingView
+  // AND sampleDocument() walked that nested field to produce the key in the output.
+  const docRow = dock.getByTestId("doc-row-sample");
+  await expect(docRow).toContainText("ORDER_ITEMS");
+
+  // The synthetic etag "SAMPLE0000" must appear — proves sampleDocument() ran
+  // on the saved view. A stale or missing setSampleDocs call would produce no row
+  // at all, so this assertion guards both the call and the correct etag value.
+  await expect(docRow).toContainText("SAMPLE0000");
+
+  // (d): DDL must contain NESTED PATH — only when editingView has a nested field.
+  // If Save did not commit the nested ORDER_ITEMS into editingView the DDL preview
+  // re-request (triggered by setEditingView) would post a flat view and return
+  // a plain CREATE statement without "NESTED PATH".
+  await openDock(page, "DDL");
+  await expect(page.getByTestId("ddl-output")).toContainText("NESTED PATH");
+
+  // Verify that the nested field actually made it into the last posted DDL body
+  const nestedField = (lastDdlBody.view?.fields ?? []).find((f) => f.kind !== undefined);
+  expect(nestedField).toBeDefined();
+  expect(nestedField?.key).toBe("ORDER_ITEMS");
+});
+
+// ---------------------------------------------------------------------------
 // v0.4 live-preview scenario: deploy → sample → edit → conflict
 // All JRDM HTTP endpoints are route-mocked (established rule — no real Oracle).
 // ---------------------------------------------------------------------------

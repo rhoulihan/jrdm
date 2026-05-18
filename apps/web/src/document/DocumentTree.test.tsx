@@ -112,6 +112,73 @@ it("drop on a nested FieldNode adds the child into that node only (stopPropagati
   expect(updatedView.fields).toHaveLength(2);
 });
 
+// ── Entity drop → openMapping (M.T5) ────────────────────────────────────────
+
+it("dropping application/x-jrdm-entity onto the tree opens the mapping modal", () => {
+  useJrdmStore.getState().reset();
+  useJrdmStore.getState().startNewView("orders");
+  render(<DocumentTree />);
+  const dz = screen.getByTestId("doctree");
+  // Simulate the entity drag payload (table name only, no JSON wrapping)
+  fireEvent.drop(dz, {
+    dataTransfer: {
+      getData: (t: string) => (t === "application/x-jrdm-entity" ? "order_items" : ""),
+    },
+  });
+  // openMapping should have set mapping.open=true, mapping.table="order_items"
+  const { mapping } = useJrdmStore.getState();
+  expect(mapping.open).toBe(true);
+  expect(mapping.table).toBe("order_items");
+  // The existing editingView must be unchanged (entity drop doesn't mutate it)
+  const view = useJrdmStore.getState().editingView!;
+  expect(view.fields).toHaveLength(1); // only _id seeded by startNewView
+});
+
+it("entity drop does NOT trigger the column quick-bind path (view unchanged, modal opens)", () => {
+  useJrdmStore.getState().reset();
+  useJrdmStore.getState().startNewView("orders");
+  const fieldCountBefore = useJrdmStore.getState().editingView!.fields.length;
+  render(<DocumentTree />);
+  const dz = screen.getByTestId("doctree");
+  fireEvent.drop(dz, {
+    dataTransfer: {
+      // Entity MIME set; column MIME would also parse if it ran — ensure it doesn't
+      getData: (t: string) => {
+        if (t === "application/x-jrdm-entity") return "orders";
+        if (t === "application/x-jrdm-column")
+          return JSON.stringify({ table: "orders", column: "extra_col" });
+        return "";
+      },
+    },
+  });
+  // Field count must NOT change (column path was short-circuited)
+  expect(useJrdmStore.getState().editingView!.fields).toHaveLength(fieldCountBefore);
+  // Modal must be open
+  expect(useJrdmStore.getState().mapping.open).toBe(true);
+});
+
+it("column drop still works after the entity-drop path is added (quick-bind unchanged)", () => {
+  useJrdmStore.getState().reset();
+  useJrdmStore.getState().startNewView("orders");
+  render(<DocumentTree />);
+  const dz = screen.getByTestId("doctree");
+  const payload = JSON.stringify({ table: "orders", column: "order_status" });
+  fireEvent.drop(dz, {
+    dataTransfer: {
+      getData: (t: string) => {
+        if (t === "application/x-jrdm-entity") return ""; // no entity payload
+        if (t === "application/x-jrdm-column") return payload;
+        return "";
+      },
+    },
+  });
+  const v = useJrdmStore.getState().editingView!;
+  expect(v.fields).toHaveLength(2);
+  expect(v.fields[1]).toEqual({ key: "order_status", source: "orders.order_status" });
+  // Modal must NOT open for a column drop
+  expect(useJrdmStore.getState().mapping.open).toBe(false);
+});
+
 it("ArrowDown selects the first field when none selected, then the next", () => {
   useJrdmStore.getState().startNewView("orders"); // fields: [_id]
   const store = useJrdmStore.getState();

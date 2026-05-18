@@ -3,6 +3,9 @@ import { useJrdmStore } from "../state/store";
 import type { EntityNodeData } from "./projectToGraph";
 import { DRAG_MIME } from "../document/dropTarget";
 
+/** MIME type for dragging an entire entity (table) onto the document canvas. */
+export const ENTITY_DRAG_MIME = "application/x-jrdm-entity";
+
 export function EntityNode(props: NodeProps & { data: EntityNodeData }) {
   const { id, data } = props;
   const entity = data.entity;
@@ -15,8 +18,16 @@ export function EntityNode(props: NodeProps & { data: EntityNodeData }) {
       <Handle type="target" position={Position.Left} />
       <button
         type="button"
+        data-testid={`entity-header-${entity.name}`}
+        draggable
         onClick={() => select(id)}
-        className="w-full text-left bg-accent text-white px-3 py-1 font-semibold rounded-t"
+        onDragStart={(e) => {
+          e.dataTransfer.setData(ENTITY_DRAG_MIME, entity.name);
+          e.dataTransfer.effectAllowed = "copy";
+          // Prevent the event from also triggering column-level drag handlers
+          e.stopPropagation();
+        }}
+        className="w-full text-left bg-accent text-white px-3 py-1 font-semibold rounded-t cursor-grab"
       >
         {entity.name}
       </button>

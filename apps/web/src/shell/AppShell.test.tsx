@@ -111,4 +111,41 @@ describe("AppShell", () => {
     expect(screen.getByTestId("doctree")).toBeInTheDocument();
     expect(screen.getByTestId("diagram-empty")).toBeInTheDocument();
   });
+
+  // M.T5: MapToDocumentModal is mounted once in AppShell (self-gates on mapping.open)
+  it("MapToDocumentModal is NOT visible by default (mapping.open=false)", () => {
+    render(<AppShell />);
+    // When mapping.open=false the modal self-gates (returns null) — no dialog
+    expect(screen.queryByTestId("map-to-document")).not.toBeInTheDocument();
+  });
+
+  it("MapToDocumentModal opens when mapping.open is set to true with a resolvable table", async () => {
+    // Seed a project with a known entity so the modal can resolve it
+    useJrdmStore.getState().setImport({
+      project: {
+        name: "test",
+        version: "0.1.0",
+        entities: [
+          {
+            name: "orders",
+            schema: "app",
+            columns: [{ name: "order_id", type: "NUMBER", nullable: false }],
+            primaryKey: ["order_id"],
+          },
+        ],
+        views: [],
+      },
+      relationships: [],
+      issues: [],
+    });
+    render(<AppShell />);
+    // openMapping triggers the modal
+    useJrdmStore.getState().openMapping("orders");
+    const dialog = await screen.findByRole("dialog");
+    expect(dialog).toBeInTheDocument();
+    expect(dialog).toHaveTextContent("orders");
+    // Cancel closes it
+    await userEvent.click(within(dialog).getByTestId("map-cancel"));
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  });
 });

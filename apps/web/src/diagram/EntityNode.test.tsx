@@ -1,8 +1,9 @@
-import { describe, it, expect, beforeEach } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import { render, screen, fireEvent } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { ReactFlowProvider } from "@xyflow/react";
-import { EntityNode } from "./EntityNode";
+import { EntityNode, ENTITY_DRAG_MIME } from "./EntityNode";
+import { DRAG_MIME } from "../document/dropTarget";
 import { useJrdmStore } from "../state/store";
 import type { DraftEntity } from "@jrdm/model";
 
@@ -69,5 +70,37 @@ describe("EntityNode", () => {
   it("column <li> elements are draggable", () => {
     renderNode();
     expect(screen.getByTestId("col-order_id")).toHaveAttribute("draggable");
+  });
+
+  it("entity header is draggable and sets application/x-jrdm-entity payload (table name)", () => {
+    renderNode();
+    const header = screen.getByTestId("entity-header-orders");
+    expect(header).toHaveAttribute("draggable");
+    // Simulate dragStart and capture what the dataTransfer received
+    const setData = vi.fn();
+    fireEvent.dragStart(header, {
+      dataTransfer: { setData, effectAllowed: "copy" },
+    });
+    expect(setData).toHaveBeenCalledWith(ENTITY_DRAG_MIME, "orders");
+    // Column MIME must NOT have been set during the entity header drag
+    const columnCall = setData.mock.calls.find(([mime]) => mime === DRAG_MIME);
+    expect(columnCall).toBeUndefined();
+  });
+
+  it("column dragStart sets application/x-jrdm-column payload, not entity MIME", () => {
+    renderNode();
+    const col = screen.getByTestId("col-order_id");
+    const setData = vi.fn();
+    fireEvent.dragStart(col, {
+      dataTransfer: { setData, effectAllowed: "copy" },
+    });
+    // Must set column MIME with column name
+    expect(setData).toHaveBeenCalledWith(
+      DRAG_MIME,
+      JSON.stringify({ table: "orders", column: "order_id" }),
+    );
+    // Must NOT set entity MIME
+    const entityCall = setData.mock.calls.find(([mime]) => mime === ENTITY_DRAG_MIME);
+    expect(entityCall).toBeUndefined();
   });
 });
