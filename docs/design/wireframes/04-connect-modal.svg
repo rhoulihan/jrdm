@@ -1,0 +1,61 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="900" viewBox="0 0 1440 900" font-family="Segoe UI, Helvetica, Arial, sans-serif">
+  <rect width="1440" height="900" fill="#FAF9F7"/>
+  <!-- dimmed workspace behind -->
+  <rect x="0" y="0" width="1440" height="40" fill="#FFFFFF" stroke="#E3E0DB"/>
+  <circle cx="26" cy="20" r="8" fill="#C74634"/><text x="44" y="25" font-size="15" font-weight="700" fill="#1A1A1A">JRDM</text>
+  <text x="120" y="25" font-size="14" fill="#1A1A1A">Project ▾   Connection ▾   Deploy ▾   View ▾   Help ▾</text>
+  <rect x="0" y="40" width="1440" height="860" fill="#1A1A1A" opacity="0.45"/>
+
+  <!-- MODAL -->
+  <rect x="450" y="180" width="540" height="540" rx="10" fill="#FFFFFF" stroke="#E3E0DB"/>
+  <rect x="450" y="180" width="540" height="56" rx="10" fill="#FFFFFF"/>
+  <text x="480" y="215" font-size="18" font-weight="700" fill="#1A1A1A">Connect to Oracle</text>
+  <text x="952" y="214" font-size="18" fill="#6B6B6B">✕</text>
+  <line x1="450" y1="236" x2="990" y2="236" stroke="#E3E0DB"/>
+
+  <g font-size="13" fill="#6B6B6B">
+    <text x="480" y="270">Connect string</text>
+    <rect x="480" y="280" width="480" height="34" rx="5" fill="#FAF9F7" stroke="#E3E0DB"/>
+    <text x="494" y="302" font-size="13" fill="#1A1A1A">json-sql-guide-oracle:1521/FREEPDB1</text>
+
+    <text x="480" y="344">User</text>
+    <rect x="480" y="354" width="232" height="34" rx="5" fill="#FAF9F7" stroke="#E3E0DB"/>
+    <text x="494" y="376" font-size="13" fill="#1A1A1A">system</text>
+    <text x="730" y="344">Password</text>
+    <rect x="730" y="354" width="230" height="34" rx="5" fill="#FAF9F7" stroke="#E3E0DB"/>
+    <text x="744" y="376" font-size="13" fill="#1A1A1A">••••••••</text>
+  </g>
+
+  <!-- Connect button (the one that was hidden — now prominent, roomy) -->
+  <rect x="480" y="404" width="140" height="38" rx="5" fill="#C74634"/>
+  <text x="512" y="428" font-size="14" fill="#FFFFFF">⚡ Connect</text>
+  <text x="636" y="428" font-size="12" fill="#2E7D32">✓ connected — 3 schemas found</text>
+
+  <line x1="480" y1="462" x2="960" y2="462" stroke="#E3E0DB" stroke-dasharray="4 4"/>
+
+  <g font-size="13" fill="#6B6B6B">
+    <text x="480" y="494">Schema</text>
+    <rect x="480" y="504" width="320" height="36" rx="5" fill="#FFFFFF" stroke="#C74634"/>
+    <text x="496" y="527" font-size="13" fill="#1A1A1A">SALES</text>
+    <text x="780" y="527" font-size="13" fill="#6B6B6B">▾</text>
+    <text x="480" y="566">Project name</text>
+    <rect x="480" y="576" width="320" height="34" rx="5" fill="#FAF9F7" stroke="#E3E0DB"/>
+    <text x="496" y="598" font-size="13" fill="#1A1A1A">orders_api</text>
+  </g>
+  <!-- dropdown preview -->
+  <rect x="480" y="540" width="320" height="96" rx="5" fill="#FFFFFF" stroke="#E3E0DB"/>
+  <rect x="480" y="540" width="320" height="32" fill="#FAF9F7"/>
+  <text x="496" y="561" font-size="13" fill="#C74634">SALES</text>
+  <text x="496" y="593" font-size="13" fill="#1A1A1A">HR</text>
+  <text x="496" y="625" font-size="13" fill="#1A1A1A">WAREHOUSE</text>
+  <text x="690" y="561" font-size="11" fill="#6B6B6B">(✓ selected)</text>
+
+  <line x1="450" y1="664" x2="990" y2="664" stroke="#E3E0DB"/>
+  <rect x="700" y="678" width="90" height="34" rx="5" fill="#FFFFFF" stroke="#E3E0DB"/>
+  <text x="722" y="700" font-size="13" fill="#6B6B6B">Cancel</text>
+  <rect x="800" y="678" width="160" height="34" rx="5" fill="#C74634"/>
+  <text x="828" y="700" font-size="13" fill="#FFFFFF">Import schema →</text>
+
+  <text x="450" y="760" font-size="13" fill="#FFFFFF">Connection &amp; import live in a roomy modal (menu / toolbar) — never clipped, never eating canvas.</text>
+  <text x="450" y="784" font-size="13" fill="#FFFFFF">Flow: fill fields → Connect → pick schema → Import. (Fixes the hidden-button problem permanently.)</text>
+</svg>

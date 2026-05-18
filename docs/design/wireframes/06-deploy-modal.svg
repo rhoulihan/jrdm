@@ -1,0 +1,54 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="900" viewBox="0 0 1440 900" font-family="Segoe UI, Helvetica, Arial, sans-serif">
+  <rect width="1440" height="900" fill="#FAF9F7"/>
+  <rect x="0" y="0" width="1440" height="40" fill="#FFFFFF" stroke="#E3E0DB"/>
+  <circle cx="26" cy="20" r="8" fill="#C74634"/><text x="44" y="25" font-size="15" font-weight="700" fill="#1A1A1A">JRDM</text>
+  <text x="120" y="25" font-size="14" fill="#1A1A1A">Project ▾   Connection ▾   Deploy ▾   View ▾   Help ▾</text>
+  <rect x="0" y="40" width="1440" height="860" fill="#1A1A1A" opacity="0.45"/>
+
+  <rect x="370" y="120" width="700" height="660" rx="10" fill="#FFFFFF" stroke="#E3E0DB"/>
+  <text x="400" y="160" font-size="18" font-weight="700" fill="#1A1A1A">Deploy &amp; Test — orders_dv</text>
+  <text x="1032" y="159" font-size="18" fill="#6B6B6B">✕</text>
+  <line x1="370" y1="178" x2="1070" y2="178" stroke="#E3E0DB"/>
+
+  <!-- step tabs -->
+  <g font-size="13">
+    <rect x="400" y="196" width="120" height="30" rx="15" fill="#C74634"/><text x="424" y="216" fill="#FFFFFF">1 · Deploy</text>
+    <rect x="530" y="196" width="120" height="30" rx="15" fill="#FFFFFF" stroke="#E3E0DB"/><text x="552" y="216" fill="#6B6B6B">2 · Sample</text>
+    <rect x="660" y="196" width="120" height="30" rx="15" fill="#FFFFFF" stroke="#E3E0DB"/><text x="688" y="216" fill="#6B6B6B">3 · Edit</text>
+    <rect x="790" y="196" width="140" height="30" rx="15" fill="#FFFFFF" stroke="#E3E0DB"/><text x="812" y="216" fill="#6B6B6B">4 · Conflict</text>
+  </g>
+
+  <!-- deploy step body -->
+  <rect x="400" y="248" width="640" height="120" rx="6" fill="#FAF9F7" stroke="#E3E0DB"/>
+  <text x="420" y="278" font-size="13" fill="#6B6B6B">Target sandbox</text>
+  <text x="420" y="302" font-size="14" fill="#1A1A1A">JRDM_PROJ_ORDERS_API   ·   SALES@FREEPDB1</text>
+  <rect x="420" y="318" width="140" height="34" rx="5" fill="#C74634"/><text x="452" y="340" font-size="13" fill="#FFFFFF">▶ Deploy</text>
+  <text x="580" y="340" font-size="13" fill="#2E7D32">✓ deployed — 3 statements</text>
+
+  <!-- sample results -->
+  <text x="400" y="404" font-size="13" font-weight="700" fill="#1A1A1A">Sample documents</text>
+  <rect x="400" y="416" width="640" height="210" rx="6" fill="#FFFFFF" stroke="#E3E0DB"/>
+  <g font-size="12" font-family="ui-monospace, Menlo, Consolas, monospace" fill="#1A1A1A">
+    <text x="418" y="442">{</text>
+    <text x="438" y="462">"_id": 1,</text>
+    <text x="438" y="482">"status": "shipped",</text>
+    <text x="438" y="502">"total": 249.00,</text>
+    <text x="438" y="522">"items": [ { "sku": "A-12", "qty": 2 } ],</text>
+    <text x="438" y="542">"_metadata": { "etag": "A1B2C3D4" }</text>
+    <text x="418" y="562">}</text>
+  </g>
+  <rect x="420" y="578" width="120" height="32" rx="5" fill="#FFFFFF" stroke="#C74634"/><text x="438" y="599" font-size="12" fill="#C74634">Edit a field…</text>
+  <rect x="552" y="578" width="170" height="32" rx="5" fill="#FFFFFF" stroke="#C74634"/><text x="566" y="599" font-size="12" fill="#C74634">Simulate conflict</text>
+
+  <!-- conflict banner preview -->
+  <rect x="400" y="638" width="640" height="56" rx="6" fill="#FFFFFF" stroke="#B00020"/>
+  <circle cx="424" cy="666" r="8" fill="#B00020"/><text x="420" y="670" font-size="11" fill="#FFFFFF">!</text>
+  <text x="446" y="662" font-size="13" font-weight="700" fill="#B00020">ETag conflict (ORA-42699)</text>
+  <text x="446" y="681" font-size="12" fill="#6B6B6B">second save rejected — document changed since you read it.  [ Dismiss ]</text>
+
+  <line x1="370" y1="716" x2="1070" y2="716" stroke="#E3E0DB"/>
+  <rect x="780" y="730" width="130" height="34" rx="5" fill="#FFFFFF" stroke="#E3E0DB"/><text x="800" y="752" font-size="13" fill="#6B6B6B">Tear down</text>
+  <rect x="920" y="730" width="120" height="34" rx="5" fill="#FFFFFF" stroke="#E3E0DB"/><text x="952" y="752" font-size="13" fill="#6B6B6B">Close</text>
+
+  <text x="370" y="812" font-size="13" fill="#FFFFFF">Deploy / Sample / Edit / Conflict / Teardown — one guided modal flow (Priya's demo path). The canvas stays untouched behind it.</text>
+</svg>

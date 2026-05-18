@@ -1,0 +1,67 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="900" viewBox="0 0 1440 900" font-family="Segoe UI, Helvetica, Arial, sans-serif">
+  <defs>
+    <pattern id="grid5" width="28" height="28" patternUnits="userSpaceOnUse">
+      <path d="M28 0H0V28" fill="none" stroke="#E3E0DB" stroke-width="1"/>
+    </pattern>
+    <marker id="arr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0 0L10 5L0 10z" fill="#C74634"/>
+    </marker>
+  </defs>
+  <rect width="1440" height="900" fill="#FAF9F7"/>
+  <rect x="0" y="0" width="1440" height="40" fill="#FFFFFF" stroke="#E3E0DB"/>
+  <circle cx="26" cy="20" r="8" fill="#C74634"/><text x="44" y="25" font-size="15" font-weight="700" fill="#1A1A1A">JRDM</text>
+  <text x="120" y="25" font-size="14" fill="#1A1A1A">Project ▾   Connection ▾   Deploy ▾   View ▾   Help ▾</text>
+  <rect x="0" y="40" width="1440" height="44" fill="#FAF9F7" stroke="#E3E0DB"/>
+  <rect x="16" y="52" width="210" height="22" rx="11" fill="#FFFFFF" stroke="#E3E0DB"/>
+  <circle cx="32" cy="63" r="5" fill="#2E7D32"/><text x="44" y="68" font-size="12" fill="#1A1A1A">Connected · SALES@FREEPDB1</text>
+
+  <!-- ERD left -->
+  <rect x="0" y="84" width="704" height="724" fill="#FFFFFF"/>
+  <rect x="0" y="84" width="704" height="724" fill="url(#grid5)" opacity="0.5"/>
+  <text x="20" y="108" font-size="13" font-weight="700" fill="#6B6B6B" letter-spacing="1">ERD CANVAS</text>
+  <rect x="90" y="180" width="220" height="200" rx="6" fill="#FFFFFF" stroke="#E3E0DB" stroke-width="1.5"/>
+  <rect x="90" y="180" width="220" height="30" rx="6" fill="#C74634"/><rect x="90" y="196" width="220" height="14" fill="#C74634"/>
+  <text x="106" y="201" font-size="13" font-weight="700" fill="#FFFFFF">ORDERS  ⠿  (drag = root)</text>
+  <text x="106" y="234" font-size="12" fill="#1A1A1A">🔑 id</text>
+  <text x="106" y="258" font-size="12" fill="#1A1A1A">customer_id</text>
+  <!-- the column being dragged: highlight source -->
+  <rect x="98" y="268" width="204" height="24" rx="4" fill="#FAF9F7" stroke="#C74634"/>
+  <text x="106" y="285" font-size="12" font-weight="700" fill="#C74634">status   ⠿ dragging…</text>
+  <text x="106" y="312" font-size="12" fill="#1A1A1A">total</text>
+  <text x="106" y="336" font-size="12" fill="#1A1A1A">order_ts</text>
+
+  <!-- drag ghost following cursor across the splitter -->
+  <g opacity="0.9">
+    <rect x="620" y="430" width="170" height="30" rx="5" fill="#FFFFFF" stroke="#C74634" stroke-width="1.5"/>
+    <text x="634" y="450" font-size="12" font-weight="700" fill="#C74634">status (orders.status)</text>
+  </g>
+  <path d="M300 280 C 460 320 470 420 612 442" fill="none" stroke="#C74634" stroke-width="2" stroke-dasharray="5 4" marker-end="url(#arr)"/>
+
+  <!-- splitter -->
+  <rect x="704" y="84" width="14" height="724" fill="#FAF9F7" stroke="#E3E0DB"/>
+  <rect x="707" y="420" width="8" height="56" rx="4" fill="#C74634"/>
+
+  <!-- document right -->
+  <rect x="718" y="84" width="722" height="724" fill="#FFFFFF"/>
+  <text x="740" y="108" font-size="13" font-weight="700" fill="#6B6B6B" letter-spacing="1">DOCUMENT CANVAS — orders_dv</text>
+  <g font-size="13" fill="#1A1A1A">
+    <rect x="760" y="140" width="600" height="34" rx="5" fill="#FAF9F7" stroke="#C74634"/>
+    <text x="776" y="162" font-weight="700">▾ orders   (root: ORDERS)</text>
+    <text x="800" y="200">• _id     ←  orders.id</text>
+    <text x="800" y="228">• total   ←  orders.total</text>
+  </g>
+  <!-- live drop indicator -->
+  <rect x="784" y="244" width="540" height="34" rx="5" fill="#FAF9F7" stroke="#C74634" stroke-width="2" stroke-dasharray="6 4"/>
+  <text x="804" y="266" font-size="13" font-weight="700" fill="#C74634">▸ insert “status” here  ←  orders.status</text>
+
+  <!-- live DDL updates in dock -->
+  <rect x="0" y="808" width="1440" height="34" fill="#FAF9F7" stroke="#E3E0DB"/>
+  <rect x="16" y="814" width="70" height="22" rx="4" fill="#FFFFFF" stroke="#C74634"/>
+  <text x="30" y="829" font-size="12" fill="#C74634">DDL</text>
+  <text x="104" y="829" font-size="12" fill="#6B6B6B">Issues   Deploy Results</text>
+  <text x="900" y="829" font-size="12" fill="#2E7D32">live: 'status' : o.status   added on drop</text>
+  <text x="1360" y="829" font-size="12" fill="#6B6B6B">▴ expand</text>
+
+  <rect x="0" y="842" width="1440" height="58" fill="#FFFFFF" stroke="#E3E0DB"/>
+  <text x="16" y="876" font-size="12" fill="#6B6B6B">Direct manipulation: drag a column (or whole entity) straight across the splitter into the document — no mode switch. Drop indicator + live DDL.</text>
+</svg>

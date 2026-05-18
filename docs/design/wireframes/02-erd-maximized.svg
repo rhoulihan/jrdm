@@ -1,0 +1,65 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="900" viewBox="0 0 1440 900" font-family="Segoe UI, Helvetica, Arial, sans-serif">
+  <defs>
+    <pattern id="grid2" width="28" height="28" patternUnits="userSpaceOnUse">
+      <path d="M28 0H0V28" fill="none" stroke="#E3E0DB" stroke-width="1"/>
+    </pattern>
+  </defs>
+  <rect width="1440" height="900" fill="#FAF9F7"/>
+  <rect x="0" y="0" width="1440" height="40" fill="#FFFFFF" stroke="#E3E0DB"/>
+  <circle cx="26" cy="20" r="8" fill="#C74634"/>
+  <text x="44" y="25" font-size="15" font-weight="700" fill="#1A1A1A">JRDM</text>
+  <text x="120" y="25" font-size="14" fill="#1A1A1A">Project ▾   Connection ▾   Deploy ▾   View ▾   Help ▾</text>
+  <rect x="0" y="40" width="1440" height="44" fill="#FAF9F7" stroke="#E3E0DB"/>
+  <rect x="16" y="52" width="210" height="22" rx="11" fill="#FFFFFF" stroke="#E3E0DB"/>
+  <circle cx="32" cy="63" r="5" fill="#2E7D32"/>
+  <text x="44" y="68" font-size="12" fill="#1A1A1A">Connected · SALES@FREEPDB1</text>
+  <text x="1120" y="68" font-size="12" fill="#6B6B6B">⊟ fit   ⊞ zoom   ⟲ relayout   ◧ reset split</text>
+
+  <!-- ERD maximized -->
+  <rect x="0" y="84" width="1340" height="724" fill="#FFFFFF"/>
+  <rect x="0" y="84" width="1340" height="724" fill="url(#grid2)" opacity="0.5"/>
+  <text x="20" y="108" font-size="13" font-weight="700" fill="#6B6B6B" letter-spacing="1">ERD CANVAS — maximized (Dana mapping a large schema)</text>
+
+  <g>
+    <!-- a wider spread of entities -->
+    <g font-size="12" fill="#1A1A1A">
+      <rect x="90" y="160" width="200" height="150" rx="6" fill="#FFFFFF" stroke="#E3E0DB" stroke-width="1.5"/>
+      <rect x="90" y="160" width="200" height="28" rx="6" fill="#C74634"/><rect x="90" y="174" width="200" height="14" fill="#C74634"/>
+      <text x="104" y="180" font-size="12" font-weight="700" fill="#FFFFFF">CUSTOMERS ⠿</text>
+      <text x="104" y="210">🔑 id</text><text x="104" y="232">name</text><text x="104" y="254">email</text><text x="104" y="276">tier</text>
+      <rect x="430" y="220" width="200" height="172" rx="6" fill="#FFFFFF" stroke="#E3E0DB" stroke-width="1.5"/>
+      <rect x="430" y="220" width="200" height="28" rx="6" fill="#C74634"/><rect x="430" y="234" width="200" height="14" fill="#C74634"/>
+      <text x="444" y="240" font-size="12" font-weight="700" fill="#FFFFFF">ORDERS ⠿</text>
+      <text x="444" y="270">🔑 id</text><text x="444" y="292">customer_id</text><text x="444" y="314">order_ts</text><text x="444" y="336">status</text><text x="444" y="358">total</text>
+      <rect x="770" y="170" width="200" height="150" rx="6" fill="#FFFFFF" stroke="#E3E0DB" stroke-width="1.5"/>
+      <rect x="770" y="170" width="200" height="28" rx="6" fill="#C74634"/><rect x="770" y="184" width="200" height="14" fill="#C74634"/>
+      <text x="784" y="190" font-size="12" font-weight="700" fill="#FFFFFF">ORDER_ITEMS ⠿</text>
+      <text x="784" y="220">🔑 id</text><text x="784" y="242">order_id</text><text x="784" y="264">sku</text><text x="784" y="286">qty</text>
+      <rect x="1060" y="240" width="200" height="128" rx="6" fill="#FFFFFF" stroke="#E3E0DB" stroke-width="1.5"/>
+      <rect x="1060" y="240" width="200" height="28" rx="6" fill="#C74634"/><rect x="1060" y="254" width="200" height="14" fill="#C74634"/>
+      <text x="1074" y="260" font-size="12" font-weight="700" fill="#FFFFFF">PRODUCTS ⠿</text>
+      <text x="1074" y="290">🔑 sku</text><text x="1074" y="312">name</text><text x="1074" y="334">price</text>
+    </g>
+    <path d="M290 235 C 360 235 360 300 430 300" fill="none" stroke="#1565C0" stroke-width="2"/>
+    <text x="330" y="255" font-size="11" fill="#1565C0">1:N</text>
+    <path d="M630 300 C 700 300 700 245 770 245" fill="none" stroke="#1565C0" stroke-width="2"/>
+    <text x="685" y="262" font-size="11" fill="#1565C0">1:N</text>
+    <path d="M970 245 C 1015 245 1015 300 1060 300" fill="none" stroke="#2E7D32" stroke-width="2"/>
+    <text x="1000" y="262" font-size="11" fill="#2E7D32">1:1</text>
+  </g>
+  <rect x="1180" y="700" width="140" height="92" rx="4" fill="#FAF9F7" stroke="#E3E0DB"/>
+  <text x="1196" y="750" font-size="10" fill="#6B6B6B">minimap (whole schema)</text>
+
+  <!-- splitter pushed far right, doc collapsed to a rail -->
+  <rect x="1340" y="84" width="14" height="724" fill="#FAF9F7" stroke="#E3E0DB"/>
+  <rect x="1343" y="420" width="8" height="56" rx="4" fill="#C74634"/>
+  <text x="1322" y="450" font-size="14" fill="#C74634">◀</text>
+  <rect x="1354" y="84" width="86" height="724" fill="#FFFFFF" stroke="#E3E0DB"/>
+  <text x="1397" y="440" font-size="12" fill="#6B6B6B" transform="rotate(90 1397 440)">DOCUMENT (collapsed — click ◀ or drag bar to restore)</text>
+
+  <rect x="0" y="808" width="1440" height="34" fill="#FAF9F7" stroke="#E3E0DB"/>
+  <text x="16" y="829" font-size="12" fill="#C74634">DDL</text><text x="74" y="829" font-size="12" fill="#6B6B6B">Issues   Deploy Results</text>
+  <text x="1360" y="829" font-size="12" fill="#6B6B6B">▴ expand</text>
+  <rect x="0" y="842" width="1440" height="58" fill="#FFFFFF" stroke="#E3E0DB"/>
+  <text x="16" y="876" font-size="12" fill="#6B6B6B">ERD maximized — 0% document width · drag the bar back left to split again</text>
+</svg>

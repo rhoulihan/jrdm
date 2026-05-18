@@ -1,0 +1,59 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="900" viewBox="0 0 1440 900" font-family="Segoe UI, Helvetica, Arial, sans-serif">
+  <rect width="1440" height="900" fill="#FAF9F7"/>
+  <rect x="0" y="0" width="1440" height="40" fill="#FFFFFF" stroke="#E3E0DB"/>
+  <circle cx="26" cy="20" r="8" fill="#C74634"/>
+  <text x="44" y="25" font-size="15" font-weight="700" fill="#1A1A1A">JRDM</text>
+  <text x="120" y="25" font-size="14" fill="#1A1A1A">Project ▾   Connection ▾   Deploy ▾   View ▾   Help ▾</text>
+  <rect x="0" y="40" width="1440" height="44" fill="#FAF9F7" stroke="#E3E0DB"/>
+  <rect x="16" y="52" width="210" height="22" rx="11" fill="#FFFFFF" stroke="#E3E0DB"/>
+  <circle cx="32" cy="63" r="5" fill="#2E7D32"/><text x="44" y="68" font-size="12" fill="#1A1A1A">Connected · SALES@FREEPDB1</text>
+  <text x="1120" y="68" font-size="12" fill="#6B6B6B">⊟ fit   ⊞ zoom   ⟲ relayout   ◧ reset split</text>
+
+  <!-- ERD collapsed to a rail -->
+  <rect x="0" y="84" width="86" height="724" fill="#FFFFFF" stroke="#E3E0DB"/>
+  <text x="43" y="430" font-size="12" fill="#6B6B6B" transform="rotate(90 43 430)">ERD (collapsed — click ▶ or drag bar to restore)</text>
+  <rect x="86" y="84" width="14" height="724" fill="#FAF9F7" stroke="#E3E0DB"/>
+  <rect x="89" y="420" width="8" height="56" rx="4" fill="#C74634"/>
+  <text x="102" y="450" font-size="14" fill="#C74634">▶</text>
+
+  <!-- DOCUMENT maximized -->
+  <rect x="100" y="84" width="1340" height="724" fill="#FFFFFF"/>
+  <text x="124" y="108" font-size="13" font-weight="700" fill="#6B6B6B" letter-spacing="1">DOCUMENT CANVAS — maximized (Arjun structuring the API document)</text>
+
+  <g font-size="14" fill="#1A1A1A">
+    <rect x="150" y="150" width="900" height="40" rx="6" fill="#FAF9F7" stroke="#C74634" stroke-width="1.5"/>
+    <text x="170" y="176" font-weight="700">▾ orders            root: ORDERS     ⚙ permissions: read   ETag: check</text>
+
+    <text x="200" y="222">• _id            ←  orders.id</text>
+    <text x="200" y="252">• status         ←  orders.status        @noupdate</text>
+    <text x="200" y="282">• total          ←  orders.total</text>
+
+    <rect x="186" y="304" width="820" height="34" rx="6" fill="#FAF9F7" stroke="#E3E0DB"/>
+    <text x="206" y="327" font-weight="700">▾ customer        object → CUSTOMERS    link: customer_id → id</text>
+    <text x="248" y="366">• name           ←  customers.name</text>
+    <text x="248" y="396">• tier           ←  customers.tier</text>
+
+    <rect x="186" y="418" width="820" height="34" rx="6" fill="#FAF9F7" stroke="#E3E0DB"/>
+    <text x="206" y="441" font-weight="700">▾ items           array → ORDER_ITEMS  link: id → order_id</text>
+    <text x="248" y="480">• sku            ←  order_items.sku</text>
+    <text x="248" y="510">• qty            ←  order_items.qty</text>
+    <rect x="222" y="532" width="784" height="32" rx="6" fill="#FAF9F7" stroke="#E3E0DB"/>
+    <text x="242" y="554" font-weight="700">▾ product       object → PRODUCTS   link: sku → sku</text>
+    <text x="284" y="592" font-size="13">• name  ←  products.name      • price  ←  products.price</text>
+  </g>
+
+  <rect x="150" y="624" width="900" height="44" rx="6" fill="#FFFFFF" stroke="#E3E0DB" stroke-dasharray="6 4"/>
+  <text x="470" y="651" font-size="12" fill="#6B6B6B">drop a column / entity here · or expand the ERD rail and drag across</text>
+
+  <!-- doc zoom control -->
+  <rect x="1392" y="720" width="34" height="64" rx="6" fill="#FFFFFF" stroke="#E3E0DB"/>
+  <text x="1405" y="744" font-size="16" fill="#1A1A1A">+</text><text x="1406" y="772" font-size="16" fill="#1A1A1A">−</text>
+  <text x="1300" y="700" font-size="11" fill="#6B6B6B">deep nesting → scroll &amp; zoom keep it navigable</text>
+
+  <rect x="0" y="808" width="1440" height="34" fill="#FAF9F7" stroke="#E3E0DB"/>
+  <rect x="16" y="814" width="70" height="22" rx="4" fill="#FFFFFF" stroke="#C74634"/>
+  <text x="30" y="829" font-size="12" fill="#C74634">DDL</text>
+  <text x="1320" y="829" font-size="12" fill="#6B6B6B">▴ expand dock</text>
+  <rect x="0" y="842" width="1440" height="58" fill="#FFFFFF" stroke="#E3E0DB"/>
+  <text x="16" y="876" font-size="12" fill="#6B6B6B">document maximized · the ERD is one click / one drag away — never a mode switch</text>
+</svg>
