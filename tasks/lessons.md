@@ -1,5 +1,13 @@
 # Lessons
 
+## 2026-05-17 — v0.4.2: three compounding ERD/import UX regressions closed
+
+**dagre collapses to one column when there are no edges.** Dagre assigns every edgeless node to rank 0, producing a single vertical column regardless of how many tables were imported — the worst-case layout for a schema with many unrelated tables. Fix: after partitioning entities into connected (have FK edges) vs isolated (none), run dagre only on the connected subgraph; lay isolated nodes in a row-wrapped grid (`cols = ceil(sqrt(n))`, `GAP_X ≥ 80, GAP_Y ≥ 60`). When there are zero relationships, skip dagre entirely and grid-lay all entities. The e2e regression guard asserts ≥ 2 distinct CSS-transform x values among the rendered React Flow nodes — a tautology-safe check that fails immediately if the single-column path returns.
+
+**Static `nodes` prop snaps drag positions back on re-render.** Passing `nodes={graph.nodes}` as a plain derived prop means every store update calls `projectToGraph` and overwrites user-moved positions. Fix: convert `DiagramPane` to controlled state — `const [nodes, setNodes, onNodesChange] = useNodesState([])` — and re-seed via a `useEffect` keyed on a stable project identity (`project.name + entities.length`). User drags persist across unrelated store ticks; a new import re-lays out cleanly. The e2e regression guard simulates a real mouse drag and asserts the node's CSS transform changed and was not snapped back, which would fail against the old static-prop pattern.
+
+**Blind free-text schema entry replaced by Connect → schema dropdown → Import.** The old "Schema Owner" free-text input had no validation — a typo silently imported nothing. Replaced with: a **Connect** button (`data-testid="connect-btn"`) under the Connect String field that POSTs `{connection}` to `POST /api/schemas`; the server queries `SELECT DISTINCT t.OWNER FROM ALL_TABLES t JOIN ALL_USERS u ON u.USERNAME = t.OWNER WHERE u.ORACLE_MAINTAINED = 'N' ORDER BY t.OWNER`; the result populates a `<select data-testid="schema-select">` that auto-selects the first schema; Import is gated on a selected schema. Only non-Oracle-maintained schemas that own at least one table appear — no `SYS`, `SYSTEM`, etc.
+
 ## 2026-05-17 — v0.4.1: Docker image shipped API-only (web UI gap closed)
 
 The v0.4 Docker image (`jrdm:dev`) built and ran only `@jrdm/server` — the React SPA was never included, so `docker compose up` gave no usable GUI. Closed in `feat/v041-bundle-web-ui`:

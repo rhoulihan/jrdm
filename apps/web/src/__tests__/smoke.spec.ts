@@ -22,6 +22,56 @@ const IMPORT_PAYLOAD = {
   issues: [],
 };
 
+// Multi-entity payload with NO relationships — exercises the grid layout path.
+// Six isolated tables must NOT stack into a single vertical column.
+const MULTI_ENTITY_IMPORT_PAYLOAD = {
+  project: {
+    name: "multi-table-imported",
+    version: "0.1.0",
+    entities: [
+      {
+        name: "customers",
+        schema: "app",
+        columns: [{ name: "customer_id", type: "NUMBER", nullable: false }],
+        primaryKey: ["customer_id"],
+      },
+      {
+        name: "products",
+        schema: "app",
+        columns: [{ name: "product_id", type: "NUMBER", nullable: false }],
+        primaryKey: ["product_id"],
+      },
+      {
+        name: "invoices",
+        schema: "app",
+        columns: [{ name: "invoice_id", type: "NUMBER", nullable: false }],
+        primaryKey: ["invoice_id"],
+      },
+      {
+        name: "payments",
+        schema: "app",
+        columns: [{ name: "payment_id", type: "NUMBER", nullable: false }],
+        primaryKey: ["payment_id"],
+      },
+      {
+        name: "regions",
+        schema: "app",
+        columns: [{ name: "region_id", type: "NUMBER", nullable: false }],
+        primaryKey: ["region_id"],
+      },
+      {
+        name: "categories",
+        schema: "app",
+        columns: [{ name: "category_id", type: "NUMBER", nullable: false }],
+        primaryKey: ["category_id"],
+      },
+    ],
+    views: [],
+  },
+  relationships: [], // deliberately no edges → must produce grid, never one column
+  issues: [],
+};
+
 test("app shell loads with the import form", async ({ page }) => {
   await page.goto("/");
   await expect(page.getByRole("heading", { name: /JRDM/ })).toBeVisible();
@@ -326,4 +376,101 @@ test("live-preview: deploy → sample → edit → conflict (API mocked)", async
 
   // Sanity: exactly 2 write calls were made (one success, one conflict)
   expect(writeCallCount).toBe(2);
+});
+
+// ---------------------------------------------------------------------------
+// v0.4.2 regression guards — layout + draggability
+//
+// Uses a 6-entity / 0-relationship payload to force the grid layout path.
+// This is the exact scenario that exposed the single-column dagre regression:
+// dagre with no edges puts every node in rank 0 → one vertical column.
+//
+// Guard (a): ≥ 2 distinct x positions among rendered node transforms — fails
+//   immediately if projectToGraph degrades back to a single-column layout.
+//
+// Guard (b): dragging a node changes its CSS transform — fails if DiagramPane
+//   reverts to a static `nodes` prop that snaps positions back on re-render.
+// ---------------------------------------------------------------------------
+
+test("ERD layout + draggability regression guards (grid path, 6 edgeless tables)", async ({
+  page,
+}) => {
+  await page.route("**/api/schemas", (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({ schemas: ["APP", "SALES"] }),
+    }),
+  );
+  await page.route("**/api/import/oracle", (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify(MULTI_ENTITY_IMPORT_PAYLOAD),
+    }),
+  );
+
+  await page.goto("/");
+  await page.getByLabel(/^user$/i).fill("scott");
+  await page.getByLabel(/^password$/i).fill("tiger");
+  await page.getByLabel(/connect string/i).fill("h:1521/FREEPDB1");
+  await page.getByTestId("connect-btn").click();
+  await page.getByLabel(/schema/i).waitFor({ state: "attached" });
+
+  // Pick SALES from the dropdown (verifies the schema select works with multiple schemas)
+  await page.getByLabel(/schema/i).selectOption("SALES");
+  await page.getByRole("button", { name: /^import$/i }).click();
+  await expect(page.getByTestId("diagram-canvas")).toBeVisible();
+
+  // Wait for React Flow nodes to actually render in the viewport.
+  // React Flow renders nodes as absolutely-positioned divs with a CSS transform.
+  // We locate them by the .react-flow__node class which React Flow always applies.
+  await page.waitForSelector(".react-flow__node", { state: "attached" });
+
+  // ── Guard (a): NOT all nodes at the same x ──────────────────────────────────
+  // React Flow positions each node via `style="transform: translate(Xpx, Ypx)"`.
+  // Extract all X values and assert at least 2 are distinct.
+  // If projectToGraph collapsed back to a single column every node would share
+  // the same X, making distinctXCount === 1 and this assertion would fail.
+  const distinctXCount = await page.evaluate(() => {
+    const nodes = Array.from(document.querySelectorAll(".react-flow__node"));
+    const xValues = nodes.map((n) => {
+      const transform = (n as HTMLElement).style.transform;
+      // transform is "translate(Xpx, Ypx)" — extract first number
+      const m = transform.match(/translate\((-?[\d.]+)px/);
+      return m && m[1] !== undefined ? parseFloat(m[1]) : null;
+    });
+    const validXs = xValues.filter((x): x is number => x !== null);
+    return new Set(validXs).size;
+  });
+  // 6 edgeless entities in a grid → sqrt(6)≈2.45 → ceil = 3 columns.
+  // At minimum we expect ≥ 2 distinct x values (any 2-column grid suffices).
+  // A tautology would be ≥ 1 (trivially true); ≥ 2 genuinely guards the regression.
+  expect(distinctXCount).toBeGreaterThanOrEqual(2);
+
+  // ── Guard (b): a dragged node changes position ──────────────────────────────
+  // Capture the transform of the FIRST node before the drag, then drag it
+  // 120 px right + 80 px down, then assert the transform changed.
+  // If DiagramPane used a static `nodes` prop (the old bug), React Flow would
+  // snap the position back to the seeded value on the next render cycle, making
+  // the transform AFTER the drag identical to the transform BEFORE — failing here.
+  const firstNode = page.locator(".react-flow__node").first();
+  const transformBefore = await firstNode.evaluate((n) => (n as HTMLElement).style.transform);
+
+  const box = await firstNode.boundingBox();
+  expect(box).not.toBeNull();
+  // Drag from the centre of the node
+  const startX = box!.x + box!.width / 2;
+  const startY = box!.y + box!.height / 2;
+  await page.mouse.move(startX, startY);
+  await page.mouse.down();
+  await page.mouse.move(startX + 120, startY + 80, { steps: 10 });
+  await page.mouse.up();
+
+  // Allow React Flow one animation frame to commit the new position
+  await page.waitForTimeout(150);
+
+  const transformAfter = await firstNode.evaluate((n) => (n as HTMLElement).style.transform);
+  // The transform must have changed — if it snapped back, transformAfter === transformBefore.
+  expect(transformAfter).not.toBe(transformBefore);
 });
