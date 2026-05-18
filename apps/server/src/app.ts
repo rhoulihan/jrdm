@@ -5,6 +5,7 @@ import { healthRoute } from "./routes/health";
 import { ddlPreviewRoute } from "./routes/ddl-preview";
 import { deployRoute } from "./routes/deploy";
 import { importOracleRoute } from "./routes/import-oracle";
+import { schemasRoute } from "./routes/schemas";
 import { sampleRoute } from "./routes/sample";
 import { documentRoute } from "./routes/document";
 import { sandboxRoute } from "./routes/sandbox";
@@ -17,6 +18,7 @@ export async function buildApp() {
   await app.register(ddlPreviewRoute, { prefix: "/api" });
   await app.register(deployRoute, { prefix: "/api" });
   await app.register(importOracleRoute, { prefix: "/api" });
+  await app.register(schemasRoute, { prefix: "/api" });
   await app.register(sampleRoute, { prefix: "/api" });
   await app.register(documentRoute, { prefix: "/api" });
   await app.register(sandboxRoute, { prefix: "/api" });

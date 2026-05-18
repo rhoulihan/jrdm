@@ -84,6 +84,20 @@ describe("buildApp — staticWebRoute co-registration with API routes", () => {
     expect(res.statusCode).toBe(400);
     await app.close();
   });
+
+  it("registers /api/schemas (not 404 — returns 400 on empty body)", async () => {
+    // Verifies schemasRoute is registered in app.ts alongside all other routes.
+    // Empty body → 400 invalid_request, not 404.
+    const app = await buildApp();
+    const res = await app.inject({
+      method: "POST",
+      url: "/api/schemas",
+      payload: {},
+    });
+    expect(res.statusCode).toBe(400);
+    expect(res.json()).toMatchObject({ error: "invalid_request" });
+    await app.close();
+  });
 });
 
 describe("POST /api/import/oracle — validation", () => {
