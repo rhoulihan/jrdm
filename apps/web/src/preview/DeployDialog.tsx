@@ -58,7 +58,7 @@ export function DeployDialog() {
       />
       <button
         type="submit"
-        data-testid="deploy-btn"
+        data-testid="dialog-deploy-btn"
         disabled={isDisabled}
         className="bg-accent text-white rounded px-4 py-2 disabled:opacity-50"
       >

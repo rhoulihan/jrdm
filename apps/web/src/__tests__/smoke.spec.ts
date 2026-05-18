@@ -11,7 +11,7 @@ async function connectAndImport(page: Page, opts: { schema?: string } = {}) {
   await dialog.getByLabel(/^user$/i).fill("scott");
   await dialog.getByLabel(/^password$/i).fill("tiger");
   await dialog.getByLabel(/connect string/i).fill("h:1521/FREEPDB1");
-  await dialog.getByTestId("connect-btn").click();
+  await dialog.getByTestId("form-connect-btn").click();
   await dialog.getByLabel(/schema/i).waitFor({ state: "attached" });
   if (opts.schema) {
     await dialog.getByLabel(/schema/i).selectOption(opts.schema);
@@ -372,7 +372,7 @@ test("live-preview: deploy → sample → edit → conflict (API mocked)", async
   await expect(dock.getByTestId("preview-panel")).toBeVisible();
 
   // --- Deploy (scoped to the dock so it never hits the toolbar deploy-btn) ---
-  await dock.getByTestId("deploy-btn").click();
+  await dock.getByTestId("dialog-deploy-btn").click();
   await expect(dock.getByTestId("deploy-success")).toBeVisible();
   await expect(dock.getByTestId("deploy-success")).toContainText("3 statements");
 

@@ -37,13 +37,13 @@ describe("ConnectionForm", () => {
 
   it("Connect button is disabled when connection fields are empty", () => {
     render(<ConnectionForm onSubmit={vi.fn()} busy={false} />);
-    expect(screen.getByTestId("connect-btn")).toBeDisabled();
+    expect(screen.getByTestId("form-connect-btn")).toBeDisabled();
   });
 
   it("Connect button is enabled once user/password/connectString are filled", async () => {
     render(<ConnectionForm onSubmit={vi.fn()} busy={false} />);
     await fillConnection();
-    expect(screen.getByTestId("connect-btn")).toBeEnabled();
+    expect(screen.getByTestId("form-connect-btn")).toBeEnabled();
   });
 
   it("Connect button is disabled while schemaLoad is 'loading'", async () => {
@@ -51,8 +51,8 @@ describe("ConnectionForm", () => {
     mockListSchemas.mockReturnValue(new Promise(() => {}));
     render(<ConnectionForm onSubmit={vi.fn()} busy={false} />);
     await fillConnection();
-    await userEvent.click(screen.getByTestId("connect-btn"));
-    expect(screen.getByTestId("connect-btn")).toBeDisabled();
+    await userEvent.click(screen.getByTestId("form-connect-btn"));
+    expect(screen.getByTestId("form-connect-btn")).toBeDisabled();
   });
 
   // ──────────────────────────────────────────────────────────────────────
@@ -63,7 +63,7 @@ describe("ConnectionForm", () => {
     mockListSchemas.mockResolvedValue(["APP", "SALES", "HR"]);
     render(<ConnectionForm onSubmit={vi.fn()} busy={false} />);
     await fillConnection();
-    await userEvent.click(screen.getByTestId("connect-btn"));
+    await userEvent.click(screen.getByTestId("form-connect-btn"));
 
     await waitFor(() => {
       expect(mockListSchemas).toHaveBeenCalledWith({
@@ -84,7 +84,7 @@ describe("ConnectionForm", () => {
     mockListSchemas.mockResolvedValue(["APP", "SALES"]);
     render(<ConnectionForm onSubmit={vi.fn()} busy={false} />);
     await fillConnection();
-    await userEvent.click(screen.getByTestId("connect-btn"));
+    await userEvent.click(screen.getByTestId("form-connect-btn"));
 
     await waitFor(() => {
       expect(screen.getByLabelText(/schema/i)).toHaveValue("APP");
@@ -101,7 +101,7 @@ describe("ConnectionForm", () => {
     );
     render(<ConnectionForm onSubmit={vi.fn()} busy={false} />);
     await fillConnection();
-    await userEvent.click(screen.getByTestId("connect-btn"));
+    await userEvent.click(screen.getByTestId("form-connect-btn"));
 
     expect(useJrdmStore.getState().schemaLoad).toBe("loading");
 
@@ -117,7 +117,7 @@ describe("ConnectionForm", () => {
     mockListSchemas.mockRejectedValue(new ApiError(502, "Oracle connection refused"));
     render(<ConnectionForm onSubmit={vi.fn()} busy={false} />);
     await fillConnection();
-    await userEvent.click(screen.getByTestId("connect-btn"));
+    await userEvent.click(screen.getByTestId("form-connect-btn"));
 
     await waitFor(() => {
       expect(screen.getByTestId("connect-error")).toHaveTextContent("Oracle connection refused");
@@ -129,7 +129,7 @@ describe("ConnectionForm", () => {
     mockListSchemas.mockRejectedValue(new ApiError(500, "fail"));
     render(<ConnectionForm onSubmit={vi.fn()} busy={false} />);
     await fillConnection();
-    await userEvent.click(screen.getByTestId("connect-btn"));
+    await userEvent.click(screen.getByTestId("form-connect-btn"));
 
     await waitFor(() => screen.getByTestId("connect-error"));
     expect(screen.getByRole("button", { name: /import/i })).toBeDisabled();
@@ -169,7 +169,7 @@ describe("ConnectionForm", () => {
     // Still disabled — schema not yet selected
     expect(screen.getByRole("button", { name: /import/i })).toBeDisabled();
 
-    await userEvent.click(screen.getByTestId("connect-btn"));
+    await userEvent.click(screen.getByTestId("form-connect-btn"));
     await waitFor(() => expect(useJrdmStore.getState().selectedSchema).toBe("APP"));
 
     expect(screen.getByRole("button", { name: /import/i })).toBeEnabled();
@@ -181,7 +181,7 @@ describe("ConnectionForm", () => {
     render(<ConnectionForm onSubmit={onSubmit} busy={false} />);
 
     await fillConnection();
-    await userEvent.click(screen.getByTestId("connect-btn"));
+    await userEvent.click(screen.getByTestId("form-connect-btn"));
 
     await waitFor(() => expect(useJrdmStore.getState().selectedSchema).toBe("APP"));
 

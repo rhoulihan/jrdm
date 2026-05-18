@@ -28,7 +28,7 @@ async function openConnectAndImport() {
   await userEvent.type(within(dialog).getByLabelText(/^user$/i), "scott");
   await userEvent.type(within(dialog).getByLabelText(/^password$/i), "tiger");
   await userEvent.type(within(dialog).getByLabelText(/connect string/i), "h:1521/FREEPDB1");
-  await userEvent.click(within(dialog).getByTestId("connect-btn"));
+  await userEvent.click(within(dialog).getByTestId("form-connect-btn"));
   await waitFor(() => expect(within(dialog).getByLabelText(/schema/i)).toHaveValue("APP"));
   await userEvent.click(within(dialog).getByRole("button", { name: /^import$/i }));
 }

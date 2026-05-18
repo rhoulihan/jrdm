@@ -51,20 +51,20 @@ describe("DeployDialog", () => {
 
   it("renders a deploy button", () => {
     render(<DeployDialog />);
-    expect(screen.getByTestId("deploy-btn")).toBeInTheDocument();
+    expect(screen.getByTestId("dialog-deploy-btn")).toBeInTheDocument();
   });
 
   it("disables the deploy button when editingView is null", () => {
     useJrdmStore.getState().setEditingView(null);
     render(<DeployDialog />);
-    expect(screen.getByTestId("deploy-btn")).toBeDisabled();
+    expect(screen.getByTestId("dialog-deploy-btn")).toBeDisabled();
   });
 
   it("disables the deploy button while deploying", () => {
     useJrdmStore.getState().setEditingView(SAMPLE_VIEW);
     useJrdmStore.getState().setDeployState("deploying");
     render(<DeployDialog />);
-    expect(screen.getByTestId("deploy-btn")).toBeDisabled();
+    expect(screen.getByTestId("dialog-deploy-btn")).toBeDisabled();
   });
 
   it("calls deployView and shows deploy-success with statement count on success", async () => {
@@ -82,7 +82,7 @@ describe("DeployDialog", () => {
     });
 
     render(<DeployDialog />);
-    await userEvent.click(screen.getByTestId("deploy-btn"));
+    await userEvent.click(screen.getByTestId("dialog-deploy-btn"));
 
     expect(client.deployView).toHaveBeenCalledWith(
       SAMPLE_VIEW,
@@ -109,7 +109,7 @@ describe("DeployDialog", () => {
     });
 
     render(<DeployDialog />);
-    await userEvent.click(screen.getByTestId("deploy-btn"));
+    await userEvent.click(screen.getByTestId("dialog-deploy-btn"));
 
     await waitFor(() => {
       expect(screen.getByTestId("deploy-error")).toBeInTheDocument();
@@ -145,7 +145,7 @@ describe("DeployDialog", () => {
     useJrdmStore.getState().setEditingView(SAMPLE_VIEW);
     render(<DeployDialog />);
 
-    await userEvent.click(screen.getByTestId("deploy-btn"));
+    await userEvent.click(screen.getByTestId("dialog-deploy-btn"));
 
     expect(useJrdmStore.getState().deployState).toBe("deploying");
 
