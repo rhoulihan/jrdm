@@ -47,7 +47,7 @@ describe("App shell", () => {
     await userEvent.type(screen.getByLabelText(/connect string/i), "h:1521/FREEPDB1");
     // Connect → schema select populated + auto-selects first
     await userEvent.click(screen.getByTestId("connect-btn"));
-    await waitFor(() => expect(screen.getByTestId("schema-select").value).toBe("APP"));
+    await waitFor(() => expect(screen.getByLabelText(/schema/i)).toHaveValue("APP"));
     await userEvent.click(screen.getByRole("button", { name: /^import$/i }));
     await waitFor(() => expect(screen.getByTestId("diagram-canvas")).toBeInTheDocument());
     expect(screen.queryByTestId("error-banner")).not.toBeInTheDocument();
@@ -69,7 +69,7 @@ describe("App shell", () => {
     await userEvent.type(screen.getByLabelText(/^password$/i), "tiger");
     await userEvent.type(screen.getByLabelText(/connect string/i), "h:1521/FREEPDB1");
     await userEvent.click(screen.getByTestId("connect-btn"));
-    await waitFor(() => expect(screen.getByTestId("schema-select").value).toBe("APP"));
+    await waitFor(() => expect(screen.getByLabelText(/schema/i)).toHaveValue("APP"));
     await userEvent.click(screen.getByRole("button", { name: /^import$/i }));
     await waitFor(() => expect(screen.getByTestId("error-banner")).toHaveTextContent("ORA-12541"));
   });

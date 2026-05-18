@@ -31,6 +31,13 @@ test("app shell loads with the import form", async ({ page }) => {
 test("author a duality view: import → design → drag column → live DDL → toggle GraphQL", async ({
   page,
 }) => {
+  await page.route("**/api/schemas", (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({ schemas: ["APP"] }),
+    }),
+  );
   await page.route("**/api/import/oracle", (route) =>
     route.fulfill({
       status: 200,
@@ -55,7 +62,9 @@ test("author a duality view: import → design → drag column → live DDL → 
   await page.getByLabel(/^user$/i).fill("scott");
   await page.getByLabel(/^password$/i).fill("tiger");
   await page.getByLabel(/connect string/i).fill("h:1521/FREEPDB1");
-  await page.getByLabel(/schema owner/i).fill("APP");
+  await page.getByTestId("connect-btn").click();
+  await page.getByLabel(/schema/i).waitFor({ state: "attached" });
+  await expect(page.getByLabel(/schema/i)).toHaveValue("APP");
   await page.getByRole("button", { name: /^import$/i }).click();
   await expect(page.getByTestId("diagram-canvas")).toBeVisible();
 
@@ -73,6 +82,13 @@ test("author a duality view: import → design → drag column → live DDL → 
 });
 
 test("nested authoring: + array → drop column into it → nested child + DDL", async ({ page }) => {
+  await page.route("**/api/schemas", (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({ schemas: ["APP"] }),
+    }),
+  );
   await page.route("**/api/import/oracle", (route) =>
     route.fulfill({
       status: 200,
@@ -110,7 +126,8 @@ test("nested authoring: + array → drop column into it → nested child + DDL",
   await page.getByLabel(/^user$/i).fill("scott");
   await page.getByLabel(/^password$/i).fill("tiger");
   await page.getByLabel(/connect string/i).fill("h:1521/FREEPDB1");
-  await page.getByLabel(/schema owner/i).fill("APP");
+  await page.getByTestId("connect-btn").click();
+  await expect(page.getByLabel(/schema/i)).toHaveValue("APP");
   await page.getByRole("button", { name: /^import$/i }).click();
   await expect(page.getByTestId("diagram-canvas")).toBeVisible();
 
@@ -246,11 +263,19 @@ test("live-preview: deploy → sample → edit → conflict (API mocked)", async
   });
 
   // --- Navigate and import ---
+  await page.route("**/api/schemas", (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({ schemas: ["APP"] }),
+    }),
+  );
   await page.goto("/");
   await page.getByLabel(/^user$/i).fill("scott");
   await page.getByLabel(/^password$/i).fill("tiger");
   await page.getByLabel(/connect string/i).fill("h:1521/FREEPDB1");
-  await page.getByLabel(/schema owner/i).fill("APP");
+  await page.getByTestId("connect-btn").click();
+  await expect(page.getByLabel(/schema/i)).toHaveValue("APP");
   await page.getByRole("button", { name: /^import$/i }).click();
   await expect(page.getByTestId("diagram-canvas")).toBeVisible();
 
