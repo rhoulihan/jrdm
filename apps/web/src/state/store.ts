@@ -15,8 +15,9 @@ export interface ImportPayload {
   issues: { code: string; severity: string; message: string; path: (string | number)[] }[];
 }
 
-type Mode = "erd" | "design";
 type DdlSyntax = "sql" | "graphql";
+type SplitCollapsed = "left" | "right" | null;
+type DockTab = "ddl" | "issues" | "deploy";
 
 interface JrdmState {
   connection: ConnectionDraft;
@@ -25,10 +26,17 @@ interface JrdmState {
   issues: ImportPayload["issues"];
   importToken: number;
   selectedEntity: string | null;
-  mode: Mode;
   editingView: DualityView | null;
   selectedFieldPath: number[] | null;
   ddlSyntax: DdlSyntax;
+  // layout slice (cross-project user preference — NOT cleared by reset())
+  splitRatio: number;
+  splitCollapsed: SplitCollapsed;
+  dockOpen: boolean;
+  dockTab: DockTab;
+  inspectorOpen: boolean;
+  inspectorPinned: boolean;
+  connectModalOpen: boolean;
   // preview slice
   deployState: "idle" | "deploying" | "deployed" | "error";
   deployMessage: string | null;
@@ -42,7 +50,13 @@ interface JrdmState {
   setConnection: (patch: Partial<ConnectionDraft>) => void;
   setImport: (p: ImportPayload) => void;
   selectEntity: (name: string | null) => void;
-  setMode: (m: Mode) => void;
+  setSplitRatio: (r: number) => void;
+  setSplitCollapsed: (c: SplitCollapsed) => void;
+  toggleDock: () => void;
+  setDockTab: (t: DockTab) => void;
+  setInspectorOpen: (open: boolean) => void;
+  toggleInspectorPin: () => void;
+  setConnectModalOpen: (open: boolean) => void;
   startNewView: (table: string) => void;
   setEditingView: (v: DualityView | null) => void;
   selectField: (path: number[] | null) => void;
@@ -66,11 +80,76 @@ const EMPTY_CONNECTION: ConnectionDraft = {
 };
 
 const AUTHORING_DEFAULTS = {
-  mode: "erd" as Mode,
   editingView: null as DualityView | null,
   selectedFieldPath: null as number[] | null,
   ddlSyntax: "sql" as DdlSyntax,
 };
+
+// --- Layout persistence (cross-project user preference) ---
+const LAYOUT_STORAGE_KEY = "jrdm.layout.v1";
+
+interface PersistedLayout {
+  splitRatio: number;
+  splitCollapsed: SplitCollapsed;
+  dockOpen: boolean;
+  dockTab: DockTab;
+}
+
+const LAYOUT_FALLBACK: PersistedLayout = {
+  splitRatio: 0.5,
+  splitCollapsed: null,
+  dockOpen: false,
+  dockTab: "ddl",
+};
+
+function safeLocalStorage(): Storage | null {
+  try {
+    if (typeof localStorage === "undefined") return null;
+    return localStorage;
+  } catch {
+    return null;
+  }
+}
+
+function readPersistedLayout(): PersistedLayout {
+  const ls = safeLocalStorage();
+  if (!ls) return { ...LAYOUT_FALLBACK };
+  try {
+    const raw = ls.getItem(LAYOUT_STORAGE_KEY);
+    if (!raw) return { ...LAYOUT_FALLBACK };
+    const parsed = JSON.parse(raw) as Partial<PersistedLayout>;
+    const ratio =
+      typeof parsed.splitRatio === "number" && parsed.splitRatio > 0 && parsed.splitRatio < 1
+        ? parsed.splitRatio
+        : LAYOUT_FALLBACK.splitRatio;
+    const collapsed =
+      parsed.splitCollapsed === "left" || parsed.splitCollapsed === "right"
+        ? parsed.splitCollapsed
+        : null;
+    const dockTab =
+      parsed.dockTab === "ddl" || parsed.dockTab === "issues" || parsed.dockTab === "deploy"
+        ? parsed.dockTab
+        : LAYOUT_FALLBACK.dockTab;
+    return {
+      splitRatio: ratio,
+      splitCollapsed: collapsed,
+      dockOpen: typeof parsed.dockOpen === "boolean" ? parsed.dockOpen : LAYOUT_FALLBACK.dockOpen,
+      dockTab,
+    };
+  } catch {
+    return { ...LAYOUT_FALLBACK };
+  }
+}
+
+function writePersistedLayout(layout: PersistedLayout): void {
+  const ls = safeLocalStorage();
+  if (!ls) return;
+  try {
+    ls.setItem(LAYOUT_STORAGE_KEY, JSON.stringify(layout));
+  } catch {
+    /* ignore quota / serialization failures */
+  }
+}
 
 const PREVIEW_DEFAULTS = {
   deployState: "idle" as const,
@@ -86,7 +165,9 @@ const SCHEMA_DEFAULTS = {
   schemaLoad: "idle" as const,
 };
 
-export const useJrdmStore = create<JrdmState>((set) => ({
+const initialLayout = readPersistedLayout();
+
+export const useJrdmStore = create<JrdmState>((set, get) => ({
   connection: { ...EMPTY_CONNECTION },
   project: null,
   relationships: [],
@@ -96,6 +177,14 @@ export const useJrdmStore = create<JrdmState>((set) => ({
   ...AUTHORING_DEFAULTS,
   ...PREVIEW_DEFAULTS,
   ...SCHEMA_DEFAULTS,
+  // layout slice — persisted keys seeded from localStorage
+  splitRatio: initialLayout.splitRatio,
+  splitCollapsed: initialLayout.splitCollapsed,
+  dockOpen: initialLayout.dockOpen,
+  dockTab: initialLayout.dockTab,
+  inspectorOpen: false,
+  inspectorPinned: false,
+  connectModalOpen: false,
   setConnection: (patch) => set((s) => ({ connection: { ...s.connection, ...patch } })),
   setImport: (p) =>
     set((s) => ({
@@ -105,10 +194,51 @@ export const useJrdmStore = create<JrdmState>((set) => ({
       importToken: s.importToken + 1,
     })),
   selectEntity: (name) => set({ selectedEntity: name }),
-  setMode: (m) => set({ mode: m }),
+  setSplitRatio: (r) => {
+    set({ splitRatio: r });
+    const s = get();
+    writePersistedLayout({
+      splitRatio: s.splitRatio,
+      splitCollapsed: s.splitCollapsed,
+      dockOpen: s.dockOpen,
+      dockTab: s.dockTab,
+    });
+  },
+  setSplitCollapsed: (c) => {
+    set({ splitCollapsed: c });
+    const s = get();
+    writePersistedLayout({
+      splitRatio: s.splitRatio,
+      splitCollapsed: s.splitCollapsed,
+      dockOpen: s.dockOpen,
+      dockTab: s.dockTab,
+    });
+  },
+  toggleDock: () => {
+    set((s) => ({ dockOpen: !s.dockOpen }));
+    const s = get();
+    writePersistedLayout({
+      splitRatio: s.splitRatio,
+      splitCollapsed: s.splitCollapsed,
+      dockOpen: s.dockOpen,
+      dockTab: s.dockTab,
+    });
+  },
+  setDockTab: (t) => {
+    set({ dockTab: t });
+    const s = get();
+    writePersistedLayout({
+      splitRatio: s.splitRatio,
+      splitCollapsed: s.splitCollapsed,
+      dockOpen: s.dockOpen,
+      dockTab: s.dockTab,
+    });
+  },
+  setInspectorOpen: (open) => set({ inspectorOpen: open }),
+  toggleInspectorPin: () => set((s) => ({ inspectorPinned: !s.inspectorPinned })),
+  setConnectModalOpen: (open) => set({ connectModalOpen: open }),
   startNewView: (table) =>
     set({
-      mode: "design",
       editingView: {
         name: `${table}_dv`,
         schema: "app",

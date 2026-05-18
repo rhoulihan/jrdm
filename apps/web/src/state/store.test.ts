@@ -83,18 +83,16 @@ describe("useJrdmStore", () => {
 describe("useJrdmStore — authoring state", () => {
   beforeEach(() => useJrdmStore.getState().reset());
 
-  it("defaults: mode erd, no editingView, sql syntax, no selected field path", () => {
+  it("defaults: no editingView, sql syntax, no selected field path", () => {
     const s = useJrdmStore.getState();
-    expect(s.mode).toBe("erd");
     expect(s.editingView).toBeNull();
     expect(s.ddlSyntax).toBe("sql");
     expect(s.selectedFieldPath).toBeNull();
   });
 
-  it("startNewView seeds an editingView and switches to design mode", () => {
+  it("startNewView seeds an editingView", () => {
     useJrdmStore.getState().startNewView("orders");
     const s = useJrdmStore.getState();
-    expect(s.mode).toBe("design");
     expect(s.editingView).toEqual({
       name: "orders_dv",
       schema: "app",
@@ -108,7 +106,7 @@ describe("useJrdmStore — authoring state", () => {
     });
   });
 
-  it("setEditingView replaces the whole view; setMode toggles", () => {
+  it("setEditingView replaces the whole view", () => {
     const v: DualityView = {
       name: "v_dv",
       schema: "s",
@@ -122,8 +120,6 @@ describe("useJrdmStore — authoring state", () => {
     };
     useJrdmStore.getState().setEditingView(v);
     expect(useJrdmStore.getState().editingView).toEqual(v);
-    useJrdmStore.getState().setMode("erd");
-    expect(useJrdmStore.getState().mode).toBe("erd");
   });
 
   it("selectField sets path; setDdlSyntax toggles", () => {
@@ -139,10 +135,115 @@ describe("useJrdmStore — authoring state", () => {
     useJrdmStore.getState().setDdlSyntax("graphql");
     useJrdmStore.getState().reset();
     const s = useJrdmStore.getState();
-    expect(s.mode).toBe("erd");
     expect(s.editingView).toBeNull();
     expect(s.selectedFieldPath).toBeNull();
     expect(s.ddlSyntax).toBe("sql");
+  });
+});
+
+describe("useJrdmStore — layout slice", () => {
+  beforeEach(() => {
+    localStorage.clear();
+    // reset layout to defaults without going through persistence
+    useJrdmStore.setState({
+      splitRatio: 0.5,
+      splitCollapsed: null,
+      dockOpen: false,
+      dockTab: "ddl",
+      inspectorOpen: false,
+      inspectorPinned: false,
+      connectModalOpen: false,
+    });
+    useJrdmStore.getState().reset();
+  });
+
+  it("defaults: splitRatio 0.5, no collapse, dock closed on ddl, inspector closed/unpinned, connect modal closed", () => {
+    const s = useJrdmStore.getState();
+    expect(s.splitRatio).toBe(0.5);
+    expect(s.splitCollapsed).toBeNull();
+    expect(s.dockOpen).toBe(false);
+    expect(s.dockTab).toBe("ddl");
+    expect(s.inspectorOpen).toBe(false);
+    expect(s.inspectorPinned).toBe(false);
+    expect(s.connectModalOpen).toBe(false);
+  });
+
+  it("setSplitRatio / setSplitCollapsed update state", () => {
+    useJrdmStore.getState().setSplitRatio(0.7);
+    expect(useJrdmStore.getState().splitRatio).toBe(0.7);
+    useJrdmStore.getState().setSplitCollapsed("left");
+    expect(useJrdmStore.getState().splitCollapsed).toBe("left");
+    useJrdmStore.getState().setSplitCollapsed(null);
+    expect(useJrdmStore.getState().splitCollapsed).toBeNull();
+  });
+
+  it("toggleDock flips dockOpen; setDockTab switches tab", () => {
+    expect(useJrdmStore.getState().dockOpen).toBe(false);
+    useJrdmStore.getState().toggleDock();
+    expect(useJrdmStore.getState().dockOpen).toBe(true);
+    useJrdmStore.getState().toggleDock();
+    expect(useJrdmStore.getState().dockOpen).toBe(false);
+    useJrdmStore.getState().setDockTab("issues");
+    expect(useJrdmStore.getState().dockTab).toBe("issues");
+    useJrdmStore.getState().setDockTab("deploy");
+    expect(useJrdmStore.getState().dockTab).toBe("deploy");
+  });
+
+  it("setInspectorOpen / toggleInspectorPin / setConnectModalOpen update state", () => {
+    useJrdmStore.getState().setInspectorOpen(true);
+    expect(useJrdmStore.getState().inspectorOpen).toBe(true);
+    useJrdmStore.getState().toggleInspectorPin();
+    expect(useJrdmStore.getState().inspectorPinned).toBe(true);
+    useJrdmStore.getState().toggleInspectorPin();
+    expect(useJrdmStore.getState().inspectorPinned).toBe(false);
+    useJrdmStore.getState().setConnectModalOpen(true);
+    expect(useJrdmStore.getState().connectModalOpen).toBe(true);
+    useJrdmStore.getState().setConnectModalOpen(false);
+    expect(useJrdmStore.getState().connectModalOpen).toBe(false);
+  });
+
+  it("persists splitRatio/splitCollapsed/dockOpen/dockTab to localStorage and round-trips", () => {
+    useJrdmStore.getState().setSplitRatio(0.65);
+    useJrdmStore.getState().setSplitCollapsed("right");
+    useJrdmStore.getState().toggleDock();
+    useJrdmStore.getState().setDockTab("deploy");
+
+    const raw = localStorage.getItem("jrdm.layout.v1");
+    expect(raw).not.toBeNull();
+    const parsed = JSON.parse(raw as string) as {
+      splitRatio: number;
+      splitCollapsed: string | null;
+      dockOpen: boolean;
+      dockTab: string;
+    };
+    expect(parsed).toEqual({
+      splitRatio: 0.65,
+      splitCollapsed: "right",
+      dockOpen: true,
+      dockTab: "deploy",
+    });
+  });
+
+  it("reset() does NOT wipe layout prefs but DOES clear project/editingView/etc.", () => {
+    useJrdmStore.getState().setSplitRatio(0.8);
+    useJrdmStore.getState().toggleDock();
+    useJrdmStore.getState().setDockTab("issues");
+    useJrdmStore.getState().setImport({ project, relationships: rels, issues: [] });
+    useJrdmStore.getState().startNewView("orders");
+    useJrdmStore.getState().selectEntity("app.orders");
+
+    useJrdmStore.getState().reset();
+
+    const s = useJrdmStore.getState();
+    // layout survives reset (cross-project user preference)
+    expect(s.splitRatio).toBe(0.8);
+    expect(s.dockOpen).toBe(true);
+    expect(s.dockTab).toBe("issues");
+    // project/authoring state IS cleared
+    expect(s.project).toBeNull();
+    expect(s.editingView).toBeNull();
+    expect(s.selectedEntity).toBeNull();
+    expect(s.importToken).toBe(0);
   });
 });
 

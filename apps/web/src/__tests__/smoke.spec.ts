@@ -1,5 +1,37 @@
 // covers: apps/web/src/main.tsx (app entrypoint via index.html)
-import { test, expect } from "@playwright/test";
+import { test, expect, type Page } from "@playwright/test";
+
+// The connection/import form is hosted in a modal opened from the toolbar
+// (Phase-0 shell). This helper drives the toolbar → modal → connect → import
+// flow that every authoring scenario depends on. The form's connect-btn is
+// scoped to the dialog so it never collides with the toolbar connect-btn.
+async function connectAndImport(page: Page, opts: { schema?: string } = {}) {
+  await page.getByTestId("connect-btn").click();
+  const dialog = page.getByRole("dialog");
+  await dialog.getByLabel(/^user$/i).fill("scott");
+  await dialog.getByLabel(/^password$/i).fill("tiger");
+  await dialog.getByLabel(/connect string/i).fill("h:1521/FREEPDB1");
+  await dialog.getByTestId("connect-btn").click();
+  await dialog.getByLabel(/schema/i).waitFor({ state: "attached" });
+  if (opts.schema) {
+    await dialog.getByLabel(/schema/i).selectOption(opts.schema);
+  } else {
+    await expect(dialog.getByLabel(/schema/i)).toHaveValue("APP");
+  }
+  await dialog.getByRole("button", { name: /^import$/i }).click();
+  await expect(page.getByTestId("diagram-canvas")).toBeVisible();
+}
+
+// Open the bottom dock and select a tab (DDL / Issues / Deploy live here in
+// the Phase-0 shell). Dock is collapsed by default.
+async function openDock(page: Page, tab: "DDL" | "Issues" | "Deploy") {
+  const dock = page.getByTestId("bottom-dock");
+  const expand = dock.getByTestId("dock-expand");
+  if (await expand.isVisible().catch(() => false)) {
+    await expand.click();
+  }
+  await page.getByTestId("bottom-dock").getByRole("tab", { name: tab }).click();
+}
 
 const IMPORT_PAYLOAD = {
   project: {
@@ -72,10 +104,15 @@ const MULTI_ENTITY_IMPORT_PAYLOAD = {
   issues: [],
 };
 
-test("app shell loads with the import form", async ({ page }) => {
+test("app shell loads with both panes and a toolbar Connect entry point", async ({ page }) => {
   await page.goto("/");
   await expect(page.getByRole("heading", { name: /JRDM/ })).toBeVisible();
-  await expect(page.getByRole("button", { name: /import/i })).toBeVisible();
+  // ERD + document tree are BOTH mounted simultaneously — no mode toggle.
+  await expect(page.getByTestId("diagram-empty")).toBeVisible();
+  await expect(page.getByTestId("doctree-empty")).toBeVisible();
+  await expect(page.getByText(/ERD mode|Design mode/)).toHaveCount(0);
+  // Connection/import is reached via the toolbar Connect button (modal-hosted).
+  await expect(page.getByTestId("connect-btn")).toBeVisible();
 });
 
 test("author a duality view: import → design → drag column → live DDL → toggle GraphQL", async ({
@@ -109,25 +146,30 @@ test("author a duality view: import → design → drag column → live DDL → 
   });
 
   await page.goto("/");
-  await page.getByLabel(/^user$/i).fill("scott");
-  await page.getByLabel(/^password$/i).fill("tiger");
-  await page.getByLabel(/connect string/i).fill("h:1521/FREEPDB1");
-  await page.getByTestId("connect-btn").click();
-  await page.getByLabel(/schema/i).waitFor({ state: "attached" });
-  await expect(page.getByLabel(/schema/i)).toHaveValue("APP");
-  await page.getByRole("button", { name: /^import$/i }).click();
-  await expect(page.getByTestId("diagram-canvas")).toBeVisible();
+  await connectAndImport(page);
 
-  // select the entity, start a view, switch to design
+  // ERD and document tree are BOTH visible at once — no mode switch.
+  await expect(page.getByTestId("diagram-canvas")).toBeVisible();
+  await expect(page.getByTestId("doctree-empty")).toBeVisible();
+
+  // select the entity, start a view from the selection
   await page.getByText("orders", { exact: true }).click();
   await page.getByRole("button", { name: /design view from/i }).click();
   await expect(page.getByTestId("doctree")).toBeVisible();
+  // ERD still mounted alongside the now-authoring document tree
+  await expect(page.getByTestId("diagram-canvas")).toBeVisible();
+
+  // DDL preview lives in the bottom dock — expand it and select DDL
+  await openDock(page, "DDL");
   await expect(page.getByTestId("ddl-output")).toContainText(
     "CREATE OR REPLACE JSON RELATIONAL DUALITY VIEW",
   );
 
   // toggle to GraphQL
-  await page.getByRole("button", { name: /^GraphQL$/ }).click();
+  await page
+    .getByTestId("bottom-dock")
+    .getByRole("button", { name: /^GraphQL$/ })
+    .click();
   await expect(page.getByTestId("ddl-output")).toContainText("orders @insert @update @delete");
 });
 
@@ -173,13 +215,7 @@ test("nested authoring: + array → drop column into it → nested child + DDL",
   });
 
   await page.goto("/");
-  await page.getByLabel(/^user$/i).fill("scott");
-  await page.getByLabel(/^password$/i).fill("tiger");
-  await page.getByLabel(/connect string/i).fill("h:1521/FREEPDB1");
-  await page.getByTestId("connect-btn").click();
-  await expect(page.getByLabel(/schema/i)).toHaveValue("APP");
-  await page.getByRole("button", { name: /^import$/i }).click();
-  await expect(page.getByTestId("diagram-canvas")).toBeVisible();
+  await connectAndImport(page);
 
   await page.getByText("orders", { exact: true }).click();
   await page.getByRole("button", { name: /design view from/i }).click();
@@ -208,6 +244,8 @@ test("nested authoring: + array → drop column into it → nested child + DDL",
 
   // nested child rendered + DDL preview re-requested with the bigger view
   await expect(page.getByTestId("field-1.0")).toBeVisible();
+  // DDL preview lives in the bottom dock — expand it to inspect the output.
+  await openDock(page, "DDL");
   // The DDL output must contain "NESTED PATH array" — only reachable when the
   // posted view actually contained a nested field (kind=array + fields=[]).
   // If nested authoring were broken (toolbar adds nothing / drop is a no-op),
@@ -321,58 +359,54 @@ test("live-preview: deploy → sample → edit → conflict (API mocked)", async
     }),
   );
   await page.goto("/");
-  await page.getByLabel(/^user$/i).fill("scott");
-  await page.getByLabel(/^password$/i).fill("tiger");
-  await page.getByLabel(/connect string/i).fill("h:1521/FREEPDB1");
-  await page.getByTestId("connect-btn").click();
-  await expect(page.getByLabel(/schema/i)).toHaveValue("APP");
-  await page.getByRole("button", { name: /^import$/i }).click();
-  await expect(page.getByTestId("diagram-canvas")).toBeVisible();
+  await connectAndImport(page);
 
-  // --- Enter design mode with an editingView ---
+  // --- Start an editingView from the selected entity ---
   await page.getByText("orders", { exact: true }).click();
   await page.getByRole("button", { name: /design view from/i }).click();
   await expect(page.getByTestId("doctree")).toBeVisible();
 
-  // --- PreviewPanel is mounted in the right rail in design mode ---
-  await expect(page.getByTestId("preview-panel")).toBeVisible();
+  // --- PreviewPanel lives in the bottom dock's Deploy tab ---
+  await openDock(page, "Deploy");
+  const dock = page.getByTestId("bottom-dock");
+  await expect(dock.getByTestId("preview-panel")).toBeVisible();
 
-  // --- Deploy ---
-  await page.getByTestId("deploy-btn").click();
-  await expect(page.getByTestId("deploy-success")).toBeVisible();
-  await expect(page.getByTestId("deploy-success")).toContainText("3 statements");
+  // --- Deploy (scoped to the dock so it never hits the toolbar deploy-btn) ---
+  await dock.getByTestId("deploy-btn").click();
+  await expect(dock.getByTestId("deploy-success")).toBeVisible();
+  await expect(dock.getByTestId("deploy-success")).toContainText("3 statements");
 
   // --- Sample ---
-  await page.getByTestId("sample-btn").click();
+  await dock.getByTestId("sample-btn").click();
   // Both sampled docs should appear as rows with etags
-  await expect(page.getByTestId("doc-row-1")).toBeVisible();
-  await expect(page.getByTestId("doc-etag-1")).toBeVisible();
-  await expect(page.getByTestId("doc-etag-1")).toContainText("AABBCCDD");
-  await expect(page.getByTestId("doc-row-2")).toBeVisible();
+  await expect(dock.getByTestId("doc-row-1")).toBeVisible();
+  await expect(dock.getByTestId("doc-etag-1")).toBeVisible();
+  await expect(dock.getByTestId("doc-etag-1")).toContainText("AABBCCDD");
+  await expect(dock.getByTestId("doc-row-2")).toBeVisible();
 
   // --- Open edit modal by clicking doc row ---
-  await page.getByTestId("doc-row-1").click();
+  await dock.getByTestId("doc-row-1").click();
   // DocumentEditModal calls readDocument on mount; wait for edit-field to appear
-  await expect(page.getByTestId("edit-field")).toBeVisible();
+  await expect(dock.getByTestId("edit-field")).toBeVisible();
 
   // --- First save: succeeds, new etag shown ---
   // The edit-field is pre-filled with the first editable scalar from READ_DOC
   // (order_status = "PENDING"). Change it and save.
-  await page.getByTestId("edit-field").fill("PROCESSED");
-  await page.getByRole("button", { name: /^save$/i }).click();
-  await expect(page.getByTestId("edit-new-etag")).toBeVisible();
-  await expect(page.getByTestId("edit-new-etag")).toContainText("EEFF0011");
+  await dock.getByTestId("edit-field").fill("PROCESSED");
+  await dock.getByRole("button", { name: /^save$/i }).click();
+  await expect(dock.getByTestId("edit-new-etag")).toBeVisible();
+  await expect(dock.getByTestId("edit-new-etag")).toContainText("EEFF0011");
 
   // Conflict banner must NOT be visible yet (the 409 has not fired yet)
-  await expect(page.getByTestId("conflict-banner")).not.toBeVisible();
+  await expect(dock.getByTestId("conflict-banner")).not.toBeVisible();
 
   // --- Second save: stale etag → 409 → conflict-banner ---
   // The doc in the modal component still holds the original _metadata.etag
   // (the component does not re-load the doc after a successful write), so this
   // second Save fires writeDocument with the old etag → mocked 409.
-  await page.getByRole("button", { name: /^save$/i }).click();
-  await expect(page.getByTestId("conflict-banner")).toBeVisible();
-  await expect(page.getByTestId("conflict-banner")).toContainText("ORA-42699");
+  await dock.getByRole("button", { name: /^save$/i }).click();
+  await expect(dock.getByTestId("conflict-banner")).toBeVisible();
+  await expect(dock.getByTestId("conflict-banner")).toContainText("ORA-42699");
 
   // Sanity: exactly 2 write calls were made (one success, one conflict)
   expect(writeCallCount).toBe(2);
@@ -411,16 +445,8 @@ test("ERD layout + draggability regression guards (grid path, 6 edgeless tables)
   );
 
   await page.goto("/");
-  await page.getByLabel(/^user$/i).fill("scott");
-  await page.getByLabel(/^password$/i).fill("tiger");
-  await page.getByLabel(/connect string/i).fill("h:1521/FREEPDB1");
-  await page.getByTestId("connect-btn").click();
-  await page.getByLabel(/schema/i).waitFor({ state: "attached" });
-
   // Pick SALES from the dropdown (verifies the schema select works with multiple schemas)
-  await page.getByLabel(/schema/i).selectOption("SALES");
-  await page.getByRole("button", { name: /^import$/i }).click();
-  await expect(page.getByTestId("diagram-canvas")).toBeVisible();
+  await connectAndImport(page, { schema: "SALES" });
 
   // Wait for React Flow nodes to actually render in the viewport.
   // React Flow renders nodes as absolutely-positioned divs with a CSS transform.
