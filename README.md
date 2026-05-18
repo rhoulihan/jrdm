@@ -24,7 +24,7 @@ pnpm --filter @jrdm/web dev         # UI dev server on :5173
 ## What JRDM does
 
 1. **Connect → Import** — click **Connect** to fetch available schemas from the live Oracle instance (`POST /api/schemas`), pick one from the dropdown, then click **Import** (`POST /api/import/oracle`): tables, columns, PKs, FKs, and cardinality are rendered as a draggable React Flow ERD. FK-connected tables are laid out by dagre (left-to-right); isolated tables land in a grid — the ERD never collapses to a single column. Nodes are draggable: position changes persist until a new import re-seeds the layout.
-2. **Author** — drag entity columns onto a JSON document tree; configure nested objects, arrays, and unnest fields; set DML permissions and ETag mode per nested table; declare asymmetric join columns (`link.from` on the parent, `link.to` on the child).
+2. **Author** — drag an **entity (table) from the ERD onto the document canvas** to open the **Map Table to Document** modal. Select all columns or cherry-pick; click `+ add node` to choose the embed location in the document tree (FK cardinality auto-sets "embed as array" for 1:N); click **Map to Path** to bind; **Save** commits the view and immediately renders a synthetic sample document (no Oracle deploy required for this preview). You can also drag individual **columns** directly onto the tree for quick scalar binds; configure nested objects, arrays, and unnest fields; set DML permissions and ETag mode per nested table.
 3. **Generate** — live DDL preview in both SQL/JSON (`CREATE OR REPLACE JSON RELATIONAL DUALITY VIEW … AS …`) and GraphQL (`@dualityView … @link(from:[…] to:[…])`), updated on every keystroke.
 4. **Deploy** — one-click deploy to a connected Oracle instance: a sandbox schema is created, DDL runs in a transaction, and success or failure surfaces immediately in the deploy dialog.
 5. **Sample** — fetch up to five prettified documents from the deployed view, rendered as a collapsible JSON tree with visible ETags.
@@ -73,6 +73,7 @@ jrdm/
 | v0.3      | GraphQL emitter, nested document editor (drag-drop, toolbar, a11y), dual-syntax DDL pane, 10k property test | ✅ Done |
 | v0.4      | Asymmetric `link {from,to}` (I3 closed), exec sample/sandbox/edit/conflict, all API routes, preview UI, e2e | ✅ Done |
 | v0.4.2    | ERD hybrid grid+dagre layout (never single column), draggable nodes, Connect→schema-picker→Import           | ✅ Done |
+| v0.5-map  | Map-to-Document modal (M.T1–M.T5): entity drag → FK-aware batch map → synthetic sample preview              | ✅ Done |
 | v0.5      | MongoDB inference + suggested duality view                                                                  | 🔜 Next |
 | v0.6      | Migrations (Liquibase/Flyway), ORDS DDL + OpenAPI, Redwood theme polish                                     | Planned |
 | v1.0      | Demo polish, docs site, signed release artifacts                                                            | Planned |

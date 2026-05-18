@@ -9,6 +9,7 @@ import { DdlPane } from "../ddl/DdlPane";
 import { IssuesPanel } from "../issues/IssuesPanel";
 import { PreviewPanel } from "../preview/PreviewPanel";
 import { ContextInspector } from "../inspector/ContextInspector";
+import { MapToDocumentModal } from "../mapping/MapToDocumentModal";
 import { MenuBar, type MenuBarItem } from "./MenuBar";
 import { Toolbar, type ConnectionStatus } from "./Toolbar";
 import { SplitPane } from "./SplitPane";
@@ -216,6 +217,9 @@ export function AppShell() {
           busy={busy}
         />
       </Modal>
+
+      {/* Map Table to Document modal — self-gates on mapping.open in the store */}
+      <MapToDocumentModal />
     </div>
   );
 }
