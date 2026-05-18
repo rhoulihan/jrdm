@@ -23,6 +23,7 @@ interface JrdmState {
   project: DraftProject | null;
   relationships: Relationship[];
   issues: ImportPayload["issues"];
+  importToken: number;
   selectedEntity: string | null;
   mode: Mode;
   editingView: DualityView | null;
@@ -90,12 +91,19 @@ export const useJrdmStore = create<JrdmState>((set) => ({
   project: null,
   relationships: [],
   issues: [],
+  importToken: 0,
   selectedEntity: null,
   ...AUTHORING_DEFAULTS,
   ...PREVIEW_DEFAULTS,
   ...SCHEMA_DEFAULTS,
   setConnection: (patch) => set((s) => ({ connection: { ...s.connection, ...patch } })),
-  setImport: (p) => set({ project: p.project, relationships: p.relationships, issues: p.issues }),
+  setImport: (p) =>
+    set((s) => ({
+      project: p.project,
+      relationships: p.relationships,
+      issues: p.issues,
+      importToken: s.importToken + 1,
+    })),
   selectEntity: (name) => set({ selectedEntity: name }),
   setMode: (m) => set({ mode: m }),
   startNewView: (table) =>
@@ -129,6 +137,7 @@ export const useJrdmStore = create<JrdmState>((set) => ({
       project: null,
       relationships: [],
       issues: [],
+      importToken: 0,
       selectedEntity: null,
       ...AUTHORING_DEFAULTS,
       ...PREVIEW_DEFAULTS,

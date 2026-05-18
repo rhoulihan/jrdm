@@ -82,6 +82,22 @@ const project2: DraftProject = {
   views: [],
 };
 
+// Same name AND same entity count as `project` ("imported", 1 entity), but different tables.
+// Under the old `name:count` key, this would NOT re-seed. Under importToken it must.
+const projectSameNameSameCount: DraftProject = {
+  name: "imported", // same as `project`
+  version: "0.1.0",
+  entities: [
+    {
+      name: "products", // different table — different schema
+      schema: "app",
+      columns: [{ name: "product_id", type: "NUMBER", nullable: false }],
+      primaryKey: ["product_id"],
+    },
+  ], // 1 entity — same count as `project`
+  views: [],
+};
+
 describe("DiagramPane", () => {
   beforeEach(() => {
     capturedProps = {};
@@ -236,5 +252,51 @@ describe("DiagramPane", () => {
     render(<DiagramPane />);
     expect(screen.getByTestId("diagram-empty")).toBeInTheDocument();
     expect(screen.queryByTestId("diagram-canvas")).toBeNull();
+  });
+
+  // ── Bug guard: same name + same entity count, different schema MUST re-seed ─
+
+  it("importing a different schema with same name and same entity count re-seeds the layout (importToken guards this)", () => {
+    // Import schema A: name="imported", 1 entity "orders"
+    useJrdmStore.getState().setImport({ project, relationships: [], issues: [] });
+    const { rerender } = render(<DiagramPane />);
+
+    const onNodesChange = capturedProps.onNodesChange as (changes: NodePositionChange[]) => void;
+    const initialNodes = capturedProps.nodes as Array<{
+      id: string;
+      position: { x: number; y: number };
+    }>;
+    const ordersNodeId = initialNodes[0]!.id; // "app.orders"
+
+    // Simulate user dragging the "orders" node.
+    act(() => {
+      onNodesChange([
+        { id: ordersNodeId, type: "position", position: { x: 777, y: 777 }, dragging: false },
+      ]);
+    });
+
+    // Import schema B: SAME name "imported", SAME entity count (1), but "products" not "orders".
+    // Old code: projectKey = "imported:1" for both → NO re-seed → BUG.
+    // New code: importToken incremented → effect re-runs → fresh layout.
+    act(() => {
+      useJrdmStore
+        .getState()
+        .setImport({ project: projectSameNameSameCount, relationships: [], issues: [] });
+    });
+    rerender(<DiagramPane />);
+
+    const nodesAfter = capturedProps.nodes as Array<{
+      id: string;
+      position: { x: number; y: number };
+    }>;
+
+    // "orders" node should be gone; "products" node should be present.
+    expect(nodesAfter.some((n) => n.id === "app.products")).toBe(true);
+    expect(nodesAfter.some((n) => n.id === "app.orders")).toBe(false);
+
+    // The "products" node must NOT be at the dragged position (777, 777)
+    // — it came from a fresh layout, not the stale one.
+    const productsNode = nodesAfter.find((n) => n.id === "app.products");
+    expect(productsNode?.position.x).not.toBe(777);
   });
 });
