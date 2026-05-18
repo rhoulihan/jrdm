@@ -53,13 +53,13 @@ describe("StatusBar", () => {
     expect(bar).toHaveTextContent(/invalid/i);
   });
 
-  it("handles undefined view gracefully", () => {
-    render(<StatusBar {...makeStatusBarProps({ view: undefined })} />);
+  it("handles missing view gracefully", () => {
+    render(<StatusBar erdZoom={1.0} docZoom={1.0} valid={true} />);
     expect(screen.getByTestId("status-bar")).toBeInTheDocument();
   });
 
-  it("handles undefined project gracefully", () => {
-    render(<StatusBar {...makeStatusBarProps({ project: undefined })} />);
+  it("handles missing project gracefully", () => {
+    render(<StatusBar erdZoom={1.0} docZoom={1.0} valid={true} />);
     expect(screen.getByTestId("status-bar")).toBeInTheDocument();
   });
 
