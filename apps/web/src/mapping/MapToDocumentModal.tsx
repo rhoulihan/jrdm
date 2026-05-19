@@ -44,6 +44,11 @@ export function MapToDocumentModal() {
     [project, table],
   );
 
+  // create-root mode: derived from whether editingView is null at the point the
+  // modal opens. Captured once at seed time (below) so it never flips during a
+  // session.
+  const [isCreateRootMode, setIsCreateRootMode] = useState(false);
+
   // ── In-modal working state ────────────────────────────────────────────────
   const [wc, setWc] = useState<WorkingCopy>(() => seedWorkingCopy(null));
   const [selectedPath, setSelectedPath] = useState<number[] | null>(null);
@@ -57,18 +62,34 @@ export function MapToDocumentModal() {
 
   // Re-seed whenever the modal (re)opens for a resolvable entity.
   useEffect(() => {
-    if (!mapping.open || !entity) return;
+    if (!mapping.open || !entity || !table) return;
     // Read editingView once via the store at open time so later store changes
     // during the session never stomp the in-modal working copy (and so it is
     // not a reactive effect dependency).
-    setWc(seedWorkingCopy(useJrdmStore.getState().editingView));
+    const currentEditingView = useJrdmStore.getState().editingView;
+    const createRoot = currentEditingView === null;
+    setIsCreateRootMode(createRoot);
+
+    let wc0 = seedWorkingCopy(currentEditingView);
+    if (createRoot) {
+      // Auto-initialize the root from the entity's PK so the user can immediately
+      // select columns and Save without needing to click "+ add node".
+      const pk = entity.primaryKey[0] ?? "id";
+      const v = toDualityView(wc0);
+      const fields = v.fields.map((f, i) =>
+        i === 0 ? { ...f, key: "_id", source: `${table}.${pk}` } : f,
+      );
+      const view: DualityView = { ...v, root: { ...v.root, table }, fields };
+      wc0 = { ...wc0, view };
+    }
+    setWc(wc0);
     setSelectedPath(null);
     setChecked(new Set());
     setSelectAll(false);
     setEmbedAsArray(false);
     setPlacedPath(null);
     setParentTable(null);
-  }, [mapping.open, entity]);
+  }, [mapping.open, entity, table]);
 
   if (!mapping.open || !entity || !table) return null;
 
@@ -212,18 +233,23 @@ export function MapToDocumentModal() {
   }
 
   function onSave() {
-    const savedView = toDualityView(wc);
+    let wcToSave = wc;
+    if (isCreateRootMode && checkedColumns.length > 0) {
+      // In create-root mode, map any checked columns directly to the document root.
+      wcToSave = mapColumns(wcToSave, [], table!, checkedColumns);
+    }
+    const savedView = toDualityView(wcToSave);
     setEditingView(savedView);
     setSampleDocs([sampleDocument(savedView, project?.entities ?? [])]);
     closeMapping();
   }
 
   return (
-    <Modal open title={`Map "${table}" to Document`} onClose={onCancel}>
+    <Modal open title={`Map "${table}" to Document`} onClose={onCancel} size="lg">
       <div data-testid="map-to-document" className="flex flex-col gap-4">
-        <div className="flex gap-4 items-stretch">
-          {/* Left — Fields */}
-          <div className="w-56 shrink-0">
+        <div className="flex gap-4 items-stretch min-h-[28rem]">
+          {/* Left — Fields (fixed width, narrower than tree) */}
+          <div className="w-52 shrink-0" data-testid="map-field-list-region">
             <FieldChecklist
               columns={columns}
               selected={checked}
@@ -258,8 +284,11 @@ export function MapToDocumentModal() {
             </button>
           </div>
 
-          {/* Right — Document tree */}
-          <div className="flex-1 min-w-0 border border-jrdm-border rounded">
+          {/* Right — Document tree (takes remaining space; 2× wider than left) */}
+          <div
+            className="flex-[2] min-w-0 border border-jrdm-border rounded"
+            data-testid="map-tree-region"
+          >
             <MappingTree
               workingCopy={wc}
               selectedPath={selectedPath}
@@ -271,6 +300,7 @@ export function MapToDocumentModal() {
               onAddNode={onAddNode}
               onDeleteNode={onDeleteNode}
               onToggleEmbed={onToggleEmbed}
+              createRootMode={isCreateRootMode}
             />
           </div>
         </div>

@@ -575,6 +575,52 @@ describe("MappingTree — embed as array checkbox", () => {
   });
 });
 
+describe("MappingTree — createRootMode (NV.T2)", () => {
+  const CREATE_ROOT_TOOLTIP =
+    "A duality view's root is the document root — add child tables later via Map to document";
+
+  it("createRootMode=true disables + add node with the create-root tooltip", () => {
+    render(<MappingTree {...makeDefaultProps({ createRootMode: true })} />);
+    const btn = getAddBtn();
+    expect(btn).toBeDisabled();
+    expect(btn.getAttribute("title")).toBe(CREATE_ROOT_TOOLTIP);
+  });
+
+  it("createRootMode=true disables − delete with the create-root tooltip", () => {
+    const { wc, sessionPath } = makeWcWithSession();
+    render(
+      <MappingTree
+        {...makeDefaultProps({ workingCopy: wc, selectedPath: sessionPath, createRootMode: true })}
+      />,
+    );
+    const btn = getDeleteBtn();
+    expect(btn).toBeDisabled();
+    expect(btn.getAttribute("title")).toBe(CREATE_ROOT_TOOLTIP);
+  });
+
+  it("createRootMode=false (default) keeps + add node enabled", () => {
+    render(<MappingTree {...makeDefaultProps({ createRootMode: false })} />);
+    expect(getAddBtn()).not.toBeDisabled();
+  });
+
+  it("createRootMode=false (default) keeps − delete enabled for session-new node", () => {
+    const { wc, sessionPath } = makeWcWithSession();
+    render(
+      <MappingTree
+        {...makeDefaultProps({ workingCopy: wc, selectedPath: sessionPath, createRootMode: false })}
+      />,
+    );
+    expect(getDeleteBtn()).not.toBeDisabled();
+  });
+
+  it("createRootMode=true: clicking + does NOT call onAddNode", () => {
+    const onAddNode = vi.fn();
+    render(<MappingTree {...makeDefaultProps({ createRootMode: true, onAddNode })} />);
+    fireEvent.click(getAddBtn());
+    expect(onAddNode).not.toHaveBeenCalled();
+  });
+});
+
 describe("MappingTree — no store coupling", () => {
   it("renders without any store provider (pure controlled component)", () => {
     expect(() => render(<MappingTree {...makeDefaultProps()} />)).not.toThrow();
