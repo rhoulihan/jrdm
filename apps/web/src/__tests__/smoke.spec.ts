@@ -389,18 +389,19 @@ test("entity context-menu: right-click / ⋯ → menu items / gating / new-view 
   const dock = page.getByTestId("bottom-dock");
 
   // Non-tautological assertions (each independently fails if Save was a no-op):
-  // (a) doc-row-sample exists — only if setSampleDocs was called with a valid doc.
-  // The root _id sources from "orders.id" which does not exist as a column name
-  // in the fixture (column is "order_id"), so sampleDocument emits _id="sample".
-  await expect(dock.getByTestId("doc-row-sample")).toBeVisible();
+  // (a) doc-row-123 exists — only if setSampleDocs was called with a valid doc.
+  // The root _id sources from "orders.order_id" (NUMBER type), so sampleDocument
+  // emits _id=123 (the NUMBER sample value). Old flow used "orders.id" (non-existent
+  // column) → "sample"; new create-root modal correctly resolves the PK → 123.
+  await expect(dock.getByTestId("doc-row-123")).toBeVisible();
 
   // (b) The rendered doc contains the embedded table key "order_items" — only
   //     if the nested field was committed to editingView AND sampleDocument
   //     walked the nested structure.
-  await expect(dock.getByTestId("doc-row-sample")).toContainText("order_items");
+  await expect(dock.getByTestId("doc-row-123")).toContainText("order_items");
 
   // (c) SAMPLE0000 etag — comes ONLY from sampleDocument(), not from /api/sample.
-  await expect(dock.getByTestId("doc-etag-sample")).toContainText("SAMPLE0000");
+  await expect(dock.getByTestId("doc-etag-123")).toContainText("SAMPLE0000");
 
   // (d) DDL updates with NESTED PATH — only when editingView has a nested field.
   await openDock(page, "DDL");
