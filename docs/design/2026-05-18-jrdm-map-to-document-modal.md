@@ -2,9 +2,20 @@
 
 > **Status:** FINAL. Rick provided this as the authoritative guide ("use this guide for the final design"). No open questions. This is the central authoring interaction of the redesigned shell and **reshapes Phase 1/5** of `2026-05-18-jrdm-ui-redesign.md` (it replaces blind one-column-at-a-time dragging with a deliberate, FK-aware embed step). Wireframe: `./wireframes/07-map-to-document-modal.svg`.
 
-## 1. Trigger
+## 1. Trigger — REVISED 2026-05-19 (drag conflicted with node repositioning)
 
-Drag a **table (entity) from the ERD canvas (left)** and drop it onto the **document canvas (right)**. The drop opens the **Map Table to Document** modal.
+**Superseded:** the original "drag entity onto the document canvas" trigger conflicted irreconcilably with React Flow node-drag (dragging an entity repositions it on the ERD — the v0.4.2 behavior we keep). Native HTML5 entity-drag could not coexist with pointer-based node drag on the same gesture.
+
+**Final trigger — an entity context menu** (right-click on an ERD entity **and** a visible `⋯` affordance on the entity header, both opening the same accessible menu via React Flow `onNodeContextMenu` + one canvas-level `ContextMenu`):
+
+| Item                                 | Action                                                                                       | Enablement                                                                                                                                                                                          |
+| ------------------------------------ | -------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Map to document…**                 | Opens the Map-to-Document modal (§2) to embed this entity into the existing document.        | **Disabled (grayed, with tooltip) unless a root entity already exists in the document** (i.e. there is an `editingView` with a root entity). Empty document → use "New view from this table" first. |
+| **New duality view from this table** | `startNewView(table)` — make this entity the **root** of a fresh duality view.               | Always enabled.                                                                                                                                                                                     |
+| **Inspect table**                    | Select the entity + open the Inspector drawer (columns/PK/FKs).                              | Always enabled.                                                                                                                                                                                     |
+| **Hide from canvas**                 | View-only declutter (entity stays in the model; restorable via a "show hidden (N)" control). | Always enabled.                                                                                                                                                                                     |
+
+ERD entity **node-drag still repositions** the table on the left canvas (v0.4.2, unchanged). The legacy **per-column quick-drag is retired** in this change (it shared the same React-Flow conflict and is fully superseded by the modal's field checklist) — its drag source, the now-dead document/FieldNode column-drop handlers, and the old column→nested-field drag-authoring path (and its tests) are removed as a deliberate supersession; all other guards remain intact.
 
 ## 2. Modal layout (left list · middle button · right tree · footer)
 
