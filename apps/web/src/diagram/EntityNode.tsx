@@ -1,13 +1,24 @@
+// @tested-by: apps/web/src/diagram/EntityNode.test.tsx
 import { Handle, Position, type NodeProps } from "@xyflow/react";
 import { useJrdmStore } from "../state/store";
 import type { EntityNodeData } from "./projectToGraph";
 import { DRAG_MIME } from "../document/dropTarget";
 
-/** MIME type for dragging an entire entity (table) onto the document canvas. */
+/**
+ * MIME type for an entity-level drag.
+ * @deprecated No longer used as a drag source on EntityNode (native entity-drag retired in ER.T2).
+ * Kept for ER.T3 which retires the DocumentTree drop handler that still reads this constant.
+ */
 export const ENTITY_DRAG_MIME = "application/x-jrdm-entity";
 
-export function EntityNode(props: NodeProps & { data: EntityNodeData }) {
-  const { id, data } = props;
+export interface EntityNodeProps extends NodeProps {
+  data: EntityNodeData;
+  /** Lifted callback: signals DiagramPane to open the context menu for this entity. */
+  onOpenMenu?: (entityName: string, x: number, y: number) => void;
+}
+
+export function EntityNode(props: EntityNodeProps) {
+  const { id, data, onOpenMenu } = props;
   const entity = data.entity;
   const select = useJrdmStore((s) => s.selectEntity);
   const pk = new Set(entity.primaryKey);
@@ -16,21 +27,29 @@ export function EntityNode(props: NodeProps & { data: EntityNodeData }) {
   return (
     <div className="bg-surface-alt border border-jrdm-border rounded shadow-sm min-w-[200px]">
       <Handle type="target" position={Position.Left} />
-      <button
-        type="button"
-        data-testid={`entity-header-${entity.name}`}
-        draggable
-        onClick={() => select(id)}
-        onDragStart={(e) => {
-          e.dataTransfer.setData(ENTITY_DRAG_MIME, entity.name);
-          e.dataTransfer.effectAllowed = "copy";
-          // Prevent the event from also triggering column-level drag handlers
-          e.stopPropagation();
-        }}
-        className="w-full text-left bg-accent text-white px-3 py-1 font-semibold rounded-t cursor-grab"
-      >
-        {entity.name}
-      </button>
+      <div className="flex items-center bg-accent text-white rounded-t">
+        <button
+          type="button"
+          data-testid={`entity-header-${entity.name}`}
+          onClick={() => select(id)}
+          className="flex-1 text-left px-3 py-1 font-semibold cursor-pointer"
+        >
+          {entity.name}
+        </button>
+        <button
+          type="button"
+          data-testid={`entity-menu-${entity.name}`}
+          aria-label={`Table actions for ${entity.name}`}
+          onClick={(e) => {
+            e.stopPropagation();
+            const rect = e.currentTarget.getBoundingClientRect();
+            onOpenMenu?.(entity.name, rect.left, rect.bottom);
+          }}
+          className="px-2 py-1 hover:bg-white/20 rounded-tr cursor-pointer text-xs leading-none select-none"
+        >
+          ⋯
+        </button>
+      </div>
       <ul className="text-sm">
         {entity.columns.map((c) => {
           const tags = [pk.has(c.name) ? "PK" : null, fkCols.has(c.name) ? "FK" : null]

@@ -394,3 +394,58 @@ describe("useJrdmStore — mapping slice", () => {
     expect(useJrdmStore.getState().mapping).toEqual({ open: false, table: null });
   });
 });
+
+describe("useJrdmStore — hiddenEntities slice", () => {
+  beforeEach(() => useJrdmStore.getState().reset());
+
+  it("defaults: hiddenEntities is empty array", () => {
+    expect(useJrdmStore.getState().hiddenEntities).toEqual([]);
+  });
+
+  it("hideEntity adds the entity name to hiddenEntities", () => {
+    useJrdmStore.getState().hideEntity("ORDERS");
+    expect(useJrdmStore.getState().hiddenEntities).toEqual(["ORDERS"]);
+  });
+
+  it("hideEntity is idempotent (no duplicates)", () => {
+    useJrdmStore.getState().hideEntity("ORDERS");
+    useJrdmStore.getState().hideEntity("ORDERS");
+    expect(useJrdmStore.getState().hiddenEntities).toEqual(["ORDERS"]);
+  });
+
+  it("hideEntity can hide multiple entities", () => {
+    useJrdmStore.getState().hideEntity("ORDERS");
+    useJrdmStore.getState().hideEntity("CUSTOMERS");
+    const hidden = useJrdmStore.getState().hiddenEntities;
+    expect(hidden).toContain("ORDERS");
+    expect(hidden).toContain("CUSTOMERS");
+    expect(hidden).toHaveLength(2);
+  });
+
+  it("showEntity removes the entity from hiddenEntities", () => {
+    useJrdmStore.getState().hideEntity("ORDERS");
+    useJrdmStore.getState().hideEntity("CUSTOMERS");
+    useJrdmStore.getState().showEntity("ORDERS");
+    expect(useJrdmStore.getState().hiddenEntities).toEqual(["CUSTOMERS"]);
+  });
+
+  it("showEntity on a non-hidden entity is a no-op", () => {
+    useJrdmStore.getState().hideEntity("ORDERS");
+    useJrdmStore.getState().showEntity("CUSTOMERS"); // not hidden
+    expect(useJrdmStore.getState().hiddenEntities).toEqual(["ORDERS"]);
+  });
+
+  it("showAllEntities clears all hidden entities", () => {
+    useJrdmStore.getState().hideEntity("ORDERS");
+    useJrdmStore.getState().hideEntity("CUSTOMERS");
+    useJrdmStore.getState().showAllEntities();
+    expect(useJrdmStore.getState().hiddenEntities).toEqual([]);
+  });
+
+  it("reset() clears hiddenEntities", () => {
+    useJrdmStore.getState().hideEntity("ORDERS");
+    useJrdmStore.getState().hideEntity("CUSTOMERS");
+    useJrdmStore.getState().reset();
+    expect(useJrdmStore.getState().hiddenEntities).toEqual([]);
+  });
+});

@@ -49,6 +49,8 @@ interface JrdmState {
   schemaLoad: "idle" | "loading" | "error";
   // mapping slice (ephemeral — Map-to-Document modal; not persisted)
   mapping: { open: boolean; table: string | null };
+  // hidden-entities slice (ephemeral view-state; not persisted; cleared by reset())
+  hiddenEntities: string[];
   setConnection: (patch: Partial<ConnectionDraft>) => void;
   setImport: (p: ImportPayload) => void;
   selectEntity: (name: string | null) => void;
@@ -72,6 +74,9 @@ interface JrdmState {
   setSchemaLoad: (state: "idle" | "loading" | "error") => void;
   openMapping: (table: string) => void;
   closeMapping: () => void;
+  hideEntity: (name: string) => void;
+  showEntity: (name: string) => void;
+  showAllEntities: () => void;
   reset: () => void;
 }
 
@@ -173,6 +178,10 @@ const MAPPING_DEFAULTS = {
   mapping: { open: false, table: null as string | null },
 } as const;
 
+const HIDDEN_ENTITIES_DEFAULTS = {
+  hiddenEntities: [] as string[],
+};
+
 const initialLayout = readPersistedLayout();
 
 export const useJrdmStore = create<JrdmState>((set, get) => ({
@@ -186,6 +195,7 @@ export const useJrdmStore = create<JrdmState>((set, get) => ({
   ...PREVIEW_DEFAULTS,
   ...SCHEMA_DEFAULTS,
   mapping: { ...MAPPING_DEFAULTS.mapping },
+  ...HIDDEN_ENTITIES_DEFAULTS,
   // layout slice — persisted keys seeded from localStorage
   splitRatio: initialLayout.splitRatio,
   splitCollapsed: initialLayout.splitCollapsed,
@@ -272,6 +282,15 @@ export const useJrdmStore = create<JrdmState>((set, get) => ({
   setSchemaLoad: (state) => set({ schemaLoad: state }),
   openMapping: (table) => set({ mapping: { open: true, table } }),
   closeMapping: () => set({ mapping: { open: false, table: null } }),
+  hideEntity: (name) =>
+    set((s) => ({
+      hiddenEntities: s.hiddenEntities.includes(name)
+        ? s.hiddenEntities
+        : [...s.hiddenEntities, name],
+    })),
+  showEntity: (name) =>
+    set((s) => ({ hiddenEntities: s.hiddenEntities.filter((n) => n !== name) })),
+  showAllEntities: () => set({ hiddenEntities: [] }),
   reset: () =>
     set({
       connection: { ...EMPTY_CONNECTION },
@@ -284,5 +303,6 @@ export const useJrdmStore = create<JrdmState>((set, get) => ({
       ...PREVIEW_DEFAULTS,
       ...SCHEMA_DEFAULTS,
       mapping: { ...MAPPING_DEFAULTS.mapping },
+      ...HIDDEN_ENTITIES_DEFAULTS,
     }),
 }));
