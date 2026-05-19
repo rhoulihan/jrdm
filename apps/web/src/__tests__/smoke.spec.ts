@@ -54,6 +54,48 @@ const IMPORT_PAYLOAD = {
   issues: [],
 };
 
+// FK-relationship payload for the entity context-menu + Map-to-Document e2e.
+// Two related tables (ORDERS 1:N ORDER_ITEMS) so the FK-aware embed rule fires
+// and the modal can be exercised through to Save.
+const FK_IMPORT_PAYLOAD = {
+  project: {
+    name: "orders-demo",
+    version: "0.1.0",
+    entities: [
+      {
+        name: "orders",
+        schema: "app",
+        columns: [
+          { name: "order_id", type: "NUMBER", nullable: false },
+          { name: "order_status", type: "VARCHAR2", nullable: true },
+        ],
+        primaryKey: ["order_id"],
+        foreignKeys: [],
+      },
+      {
+        name: "order_items",
+        schema: "app",
+        columns: [
+          { name: "item_id", type: "NUMBER", nullable: false },
+          { name: "order_id", type: "NUMBER", nullable: false },
+          { name: "sku", type: "VARCHAR2", nullable: true },
+        ],
+        primaryKey: ["item_id"],
+        foreignKeys: [{ columns: ["order_id"], refTable: "orders", refColumns: ["order_id"] }],
+      },
+    ],
+    views: [],
+  },
+  relationships: [
+    {
+      from: { table: "orders", columns: ["order_id"] },
+      to: { table: "order_items", columns: ["order_id"] },
+      cardinality: "1:N",
+    },
+  ],
+  issues: [],
+};
+
 // Multi-entity payload with NO relationships — exercises the grid layout path.
 // Six isolated tables must NOT stack into a single vertical column.
 const MULTI_ENTITY_IMPORT_PAYLOAD = {
@@ -115,9 +157,7 @@ test("app shell loads with both panes and a toolbar Connect entry point", async 
   await expect(page.getByTestId("connect-btn")).toBeVisible();
 });
 
-test("author a duality view: import → design → drag column → live DDL → toggle GraphQL", async ({
-  page,
-}) => {
+test("author a duality view: import → design → live DDL → toggle GraphQL", async ({ page }) => {
   await page.route("**/api/schemas", (route) =>
     route.fulfill({
       status: 200,
@@ -171,6 +211,193 @@ test("author a duality view: import → design → drag column → live DDL → 
     .getByRole("button", { name: /^GraphQL$/ })
     .click();
   await expect(page.getByTestId("ddl-output")).toContainText("orders @insert @update @delete");
+});
+
+// ---------------------------------------------------------------------------
+// ER.T4 — entity context-menu (right-click + ⋯) + Map-to-Document e2e
+//
+// Drives the complete context-menu authoring flow from import through Save
+// using JRDM-endpoint mocks only (never real Oracle). Verifies:
+//   • right-click AND ⋯ button each open the 4-item context menu
+//   • "Map to document…" is aria-disabled (+ tooltip) with no root view
+//   • "New duality view from this table" creates the root (doctree appears)
+//   • after root exists, "Map to document…" is enabled for other entities
+//   • opening the modal → Select All → + add node → Map to Path → Save
+//     produces doc-row-sample in the Deploy dock with the embedded table key
+//     ("order_items") AND the synthetic etag ("SAMPLE0000") — fails if Save
+//     was a no-op or the sample generator did not run (non-tautological)
+//   • Hide from canvas removes the node; show-hidden restores it
+//   • no entity or column element carries the HTML `draggable` attribute
+//     (per-column quick-drag retired in ER.T3) while v0.4.2 node-reposition
+//     guard (React Flow drag) stays in its own separate test and is not weakened
+// ---------------------------------------------------------------------------
+
+test("entity context-menu: right-click / ⋯ → menu items / gating / new-view / map-modal → Save → sample / hide-show / no-draggable", async ({
+  page,
+}) => {
+  // Route mocks — JRDM endpoints only, no real Oracle.
+  await page.route("**/api/schemas", (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({ schemas: ["APP"] }),
+    }),
+  );
+  await page.route("**/api/import/oracle", (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify(FK_IMPORT_PAYLOAD),
+    }),
+  );
+  await page.route("**/api/ddl/preview", (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        sql: "CREATE OR REPLACE JSON RELATIONAL DUALITY VIEW app.orders_dv AS ORDERS NESTED PATH order_items",
+      }),
+    }),
+  );
+
+  await page.goto("/");
+  await connectAndImport(page);
+
+  // Canvas must be visible, document tree still empty.
+  await expect(page.getByTestId("diagram-canvas")).toBeVisible();
+  await expect(page.getByTestId("doctree-empty")).toBeVisible();
+
+  // ── 1. Right-click on the "orders" entity node ──────────────────────────
+  // React Flow renders nodes as .react-flow__node divs; right-clicking one
+  // fires onNodeContextMenu on DiagramPane which opens the ContextMenu.
+  const ordersNode = page.locator(".react-flow__node").filter({ hasText: "orders" }).first();
+  await ordersNode.waitFor({ state: "visible" });
+  await ordersNode.click({ button: "right" });
+
+  // Context menu must appear with all 4 items.
+  const ctxMenu = page.getByTestId("entity-context-menu");
+  await expect(ctxMenu).toBeVisible();
+  await expect(page.getByTestId("ctxitem-map-to-document")).toBeVisible();
+  await expect(page.getByTestId("ctxitem-new-duality-view-from-this-table")).toBeVisible();
+  await expect(page.getByTestId("ctxitem-inspect-table")).toBeVisible();
+  await expect(page.getByTestId("ctxitem-hide-from-canvas")).toBeVisible();
+
+  // ── 2. "Map to document…" must be disabled (no root view yet) ───────────
+  const mapItem = page.getByTestId("ctxitem-map-to-document");
+  await expect(mapItem).toHaveAttribute("aria-disabled", "true");
+  // Tooltip text is set via the `title` attribute on the button element.
+  const titleAttr = await mapItem.getAttribute("title");
+  expect(titleAttr).toContain("Create a root view first");
+
+  // "New duality view from this table" must be enabled (no aria-disabled).
+  const newViewItem = page.getByTestId("ctxitem-new-duality-view-from-this-table");
+  await expect(newViewItem).not.toHaveAttribute("aria-disabled", "true");
+
+  // ── 3. Click "New duality view from this table" → root created ──────────
+  await newViewItem.click();
+  // The menu should close; the doctree should now appear (view started).
+  await expect(ctxMenu).not.toBeVisible();
+  await expect(page.getByTestId("doctree")).toBeVisible();
+
+  // ── 4. Open the context menu via the ⋯ button for "order_items" ─────────
+  // The ⋯ button is the visible affordance on the entity header (EntityNode).
+  const ellipsisBtn = page.getByTestId("entity-menu-order_items");
+  await ellipsisBtn.waitFor({ state: "visible" });
+  await ellipsisBtn.click();
+
+  await expect(ctxMenu).toBeVisible();
+
+  // Now that a root view exists, "Map to document…" MUST be enabled.
+  const mapItemAfterRoot = page.getByTestId("ctxitem-map-to-document");
+  await expect(mapItemAfterRoot).not.toHaveAttribute("aria-disabled", "true");
+
+  // ── 5. Click "Map to document…" → modal opens ───────────────────────────
+  await mapItemAfterRoot.click();
+  await expect(ctxMenu).not.toBeVisible();
+
+  const modal = page.getByTestId("map-to-document");
+  await expect(modal).toBeVisible();
+
+  // ── 6. Select All columns in the FieldChecklist ──────────────────────────
+  const selectAllCheckbox = page.getByTestId("select-all");
+  await selectAllCheckbox.check();
+  // The field list should exist (the checklist renders the columns).
+  await expect(page.getByTestId("field-list")).toBeVisible();
+
+  // ── 7. + add node → creates the embed location in the MappingTree ────────
+  const addNodeBtn = page.getByTestId("add-node-btn");
+  await addNodeBtn.click();
+
+  // A tree node for order_items should appear in the mapping tree.
+  // MappingTree testids are path-based: mnode-<path.join(".")>.
+  // After seeding from the "orders" root view (which has _id at index 0),
+  // the order_items subnode is appended at index 1 → testid "mnode-1".
+  await expect(page.getByTestId("mapping-tree")).toBeVisible();
+  // Assert by the field label text (more readable and layout-independent):
+  await expect(page.getByTestId("mapping-tree")).toContainText("order_items");
+
+  // ── 8. Map to Path → binds the selected columns to the node ─────────────
+  const mapToPathBtn = page.getByTestId("map-to-path-btn");
+  await expect(mapToPathBtn).not.toBeDisabled();
+  await mapToPathBtn.click();
+
+  // ── 9. Save → editingView committed + sampleDocs populated ───────────────
+  await page.getByTestId("map-save").click();
+
+  // The modal should close.
+  await expect(modal).not.toBeVisible();
+
+  // The sample document is now in the store (setSampleDocs was called in onSave).
+  // It appears in the Deploy dock → ResultsPane as doc-row-<_id>.
+  // sampleDocument generates _id=123 (NUMBER type for order_id).
+  // Open the Deploy dock to verify.
+  await openDock(page, "Deploy");
+  const dock = page.getByTestId("bottom-dock");
+
+  // Non-tautological assertions (each independently fails if Save was a no-op):
+  // (a) doc-row-sample exists — only if setSampleDocs was called with a valid doc.
+  // The root _id sources from "orders.id" which does not exist as a column name
+  // in the fixture (column is "order_id"), so sampleDocument emits _id="sample".
+  await expect(dock.getByTestId("doc-row-sample")).toBeVisible();
+
+  // (b) The rendered doc contains the embedded table key "order_items" — only
+  //     if the nested field was committed to editingView AND sampleDocument
+  //     walked the nested structure.
+  await expect(dock.getByTestId("doc-row-sample")).toContainText("order_items");
+
+  // (c) SAMPLE0000 etag — comes ONLY from sampleDocument(), not from /api/sample.
+  await expect(dock.getByTestId("doc-etag-sample")).toContainText("SAMPLE0000");
+
+  // (d) DDL updates with NESTED PATH — only when editingView has a nested field.
+  await openDock(page, "DDL");
+  await expect(page.getByTestId("ddl-output")).toContainText("NESTED PATH");
+
+  // ── 10. Hide from canvas ──────────────────────────────────────────────────
+  // Right-click orders node again to open the menu.
+  await ordersNode.click({ button: "right" });
+  await expect(ctxMenu).toBeVisible();
+  await page.getByTestId("ctxitem-hide-from-canvas").click();
+
+  // The orders node must no longer be in the DOM.
+  await expect(ordersNode).not.toBeVisible();
+
+  // The "show-hidden" control must appear.
+  const showHidden = page.getByTestId("show-hidden");
+  await expect(showHidden).toBeVisible();
+  await expect(showHidden).toContainText("Show hidden");
+
+  // Click show-hidden → orders node returns.
+  await showHidden.click();
+  await expect(ordersNode).toBeVisible();
+  await expect(showHidden).not.toBeVisible();
+
+  // ── 11. No draggable entity or column elements ────────────────────────────
+  // ER.T3 retired the native HTML5 drag. Assert that no element inside the
+  // diagram canvas carries the `draggable` attribute (the retired source).
+  // React Flow node-reposition is pointer-based (not the `draggable` attribute)
+  // so this check does NOT conflict with v0.4.2 guard (b) in its own test.
+  const draggableCount = await page.getByTestId("diagram-canvas").locator("[draggable]").count();
+  expect(draggableCount).toBe(0);
 });
 
 // ---------------------------------------------------------------------------
