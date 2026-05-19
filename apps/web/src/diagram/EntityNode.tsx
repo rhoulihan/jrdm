@@ -2,14 +2,6 @@
 import { Handle, Position, type NodeProps } from "@xyflow/react";
 import { useJrdmStore } from "../state/store";
 import type { EntityNodeData } from "./projectToGraph";
-import { DRAG_MIME } from "../document/dropTarget";
-
-/**
- * MIME type for an entity-level drag.
- * @deprecated No longer used as a drag source on EntityNode (native entity-drag retired in ER.T2).
- * Kept for ER.T3 which retires the DocumentTree drop handler that still reads this constant.
- */
-export const ENTITY_DRAG_MIME = "application/x-jrdm-entity";
 
 export interface EntityNodeProps extends NodeProps {
   data: EntityNodeData;
@@ -59,15 +51,7 @@ export function EntityNode(props: EntityNodeProps) {
             <li
               key={c.name}
               data-testid={`col-${c.name}`}
-              draggable
-              onDragStart={(e) => {
-                e.dataTransfer.setData(
-                  DRAG_MIME,
-                  JSON.stringify({ table: entity.name, column: c.name }),
-                );
-                e.dataTransfer.effectAllowed = "copy";
-              }}
-              className="flex justify-between px-3 py-0.5 border-t border-jrdm-border cursor-grab"
+              className="flex justify-between px-3 py-0.5 border-t border-jrdm-border"
             >
               <span>{c.name}</span>
               <span className="text-jrdm-muted">
