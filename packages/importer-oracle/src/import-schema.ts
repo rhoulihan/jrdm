@@ -9,7 +9,7 @@ import { TABLES_SQL, COLUMNS_SQL, PK_UK_SQL, FK_SQL } from "./dictionary-sql";
 import { mapRowsToEntities, type ColumnRow, type KeyRow, type FkRow } from "./map";
 import { classifyCardinality } from "./cardinality";
 
-export type QueryExec = <T>(sql: string) => Promise<T[]>;
+export type QueryExec = <T>(sql: string, binds?: Record<string, unknown>) => Promise<T[]>;
 
 export interface ImportOptions {
   schemaOwner: string;
@@ -24,10 +24,11 @@ export interface ImportResult {
 }
 
 export async function importSchema(exec: QueryExec, opts: ImportOptions): Promise<ImportResult> {
-  const tableRows = await exec<{ TABLE_NAME: string }>(TABLES_SQL);
-  const columns = await exec<ColumnRow>(COLUMNS_SQL);
-  const keys = await exec<KeyRow>(PK_UK_SQL);
-  const fks = await exec<FkRow>(FK_SQL);
+  const ownerBind = { owner: opts.schemaOwner };
+  const tableRows = await exec<{ TABLE_NAME: string }>(TABLES_SQL, ownerBind);
+  const columns = await exec<ColumnRow>(COLUMNS_SQL, ownerBind);
+  const keys = await exec<KeyRow>(PK_UK_SQL, ownerBind);
+  const fks = await exec<FkRow>(FK_SQL, ownerBind);
 
   const tableNames = tableRows.map((r) => r.TABLE_NAME);
   const { entities, unmapped } = mapRowsToEntities(

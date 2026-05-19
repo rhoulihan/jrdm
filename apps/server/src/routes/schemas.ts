@@ -24,8 +24,13 @@ export const schemasRoute: FastifyPluginAsync = async (app) => {
     try {
       conn = await oracledb.getConnection(connection);
       const c = conn;
-      const exec: QueryExec = async <T>(sql: string): Promise<T[]> => {
-        const r = await c.execute<T>(sql, [], { outFormat: oracledb.OUT_FORMAT_OBJECT });
+      const exec: QueryExec = async <T>(
+        sql: string,
+        binds?: Record<string, unknown>,
+      ): Promise<T[]> => {
+        const r = await c.execute<T>(sql, (binds ?? {}) as oracledb.BindParameters, {
+          outFormat: oracledb.OUT_FORMAT_OBJECT,
+        });
         return r.rows ?? [];
       };
       const schemas = await listSchemas(exec);
