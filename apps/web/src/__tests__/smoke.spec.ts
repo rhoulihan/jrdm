@@ -220,8 +220,9 @@ test("author a duality view: import → design → live DDL → toggle GraphQL",
 // using JRDM-endpoint mocks only (never real Oracle). Verifies:
 //   • right-click AND ⋯ button each open the 4-item context menu
 //   • "Map to document…" is aria-disabled (+ tooltip) with no root view
-//   • "New duality view from this table" creates the root (doctree appears)
-//   • after root exists, "Map to document…" is enabled for other entities
+//   • "New duality view from this table" opens the modal in create-root mode; Save creates the root (doctree appears)
+//   • after root exists, "New duality view…" is disabled; "Map to document…" is enabled for other entities
+//   • Reset view button appears in Toolbar after a view is created
 //   • opening the modal → Select All → + add node → Map to Path → Save
 //     produces doc-row-sample in the Deploy dock with the embedded table key
 //     ("order_items") AND the synthetic etag ("SAMPLE0000") — fails if Save
@@ -293,11 +294,44 @@ test("entity context-menu: right-click / ⋯ → menu items / gating / new-view 
   const newViewItem = page.getByTestId("ctxitem-new-duality-view-from-this-table");
   await expect(newViewItem).not.toHaveAttribute("aria-disabled", "true");
 
-  // ── 3. Click "New duality view from this table" → root created ──────────
+  // ── 3. Click "New duality view from this table" → modal opens (NV.T3) ────
+  // Clicking now opens the Map-to-Document modal in create-root mode
+  // (editingView===null → create-root), rather than calling startNewView directly.
   await newViewItem.click();
-  // The menu should close; the doctree should now appear (view started).
+  // The context menu should close.
   await expect(ctxMenu).not.toBeVisible();
+
+  // The modal should now be visible (create-root mode).
+  const newViewModal = page.getByTestId("map-to-document");
+  await expect(newViewModal).toBeVisible();
+
+  // In create-root mode the +/- path-building buttons are disabled.
+  const addNodeBtnCreateRoot = page.getByTestId("add-node-btn");
+  await expect(addNodeBtnCreateRoot).toBeDisabled();
+
+  // Save the modal (even with no fields selected — just creates the root entity).
+  await page.getByTestId("map-save").click();
+
+  // Modal closes; doctree now appears (editingView was set by Save).
+  await expect(newViewModal).not.toBeVisible();
   await expect(page.getByTestId("doctree")).toBeVisible();
+
+  // ── 3a. NV.T3: After creating a view, "New duality view…" is DISABLED ────
+  // Reset view button should now be visible in the Toolbar.
+  await expect(page.getByTestId("reset-view")).toBeVisible();
+
+  // Right-click orders again to verify new-view item is now disabled.
+  await ordersNode.click({ button: "right" });
+  await expect(ctxMenu).toBeVisible();
+  const newViewItemAfterCreate = page.getByTestId("ctxitem-new-duality-view-from-this-table");
+  await expect(newViewItemAfterCreate).toHaveAttribute("aria-disabled", "true");
+  await expect(newViewItemAfterCreate).toHaveAttribute(
+    "title",
+    "Reset the current view to start a new one",
+  );
+  // Close the menu.
+  await page.keyboard.press("Escape");
+  await expect(ctxMenu).not.toBeVisible();
 
   // ── 4. Open the context menu via the ⋯ button for "order_items" ─────────
   // The ⋯ button is the visible affordance on the entity header (EntityNode).
