@@ -46,7 +46,7 @@ describe("FieldNode", () => {
   });
 });
 
-it("dropping a column onto a NESTED field appends a scalar into that field", () => {
+it("a nested FieldNode has NO drop handler (column nested-drop authoring retired)", () => {
   useJrdmStore.getState().reset();
   useJrdmStore.getState().setEditingView({
     name: "v_dv",
@@ -65,39 +65,14 @@ it("dropping a column onto a NESTED field appends a scalar into that field", () 
   const f = useJrdmStore.getState().editingView!.fields[1]!;
   render(<FieldNode field={f} path={[1]} />);
   const node = screen.getByTestId("field-1");
+  // Dropping a column-shaped payload onto a nested node must NOT add a child —
+  // the v0.3b.1 nested-drop authoring path is removed (the modal replaces it).
   const payload = JSON.stringify({ table: "order_items", column: "quantity" });
   fireEvent.drop(node, {
     dataTransfer: { getData: (t: string) => (t === "application/x-jrdm-column" ? payload : "") },
   });
   const items = useJrdmStore.getState().editingView!.fields[1];
-  expect(items && "fields" in items && items.fields).toEqual([
-    { key: "quantity", source: "order_items.quantity" },
-  ]);
-});
-
-it("dropping a column onto a SCALAR field does NOT mutate (only nested accept)", () => {
-  useJrdmStore.getState().reset();
-  useJrdmStore.getState().setEditingView({
-    name: "v_dv",
-    schema: "app",
-    createMode: "orReplace",
-    root: {
-      table: "orders",
-      permissions: { insert: false, update: false, delete: false },
-      etag: "check",
-    },
-    fields: [{ key: "_id", source: "orders.id" }],
-  });
-  const f = useJrdmStore.getState().editingView!.fields[0]!;
-  render(<FieldNode field={f} path={[0]} />);
-  const node = screen.getByTestId("field-0");
-  fireEvent.drop(node, {
-    dataTransfer: {
-      getData: (t: string) =>
-        t === "application/x-jrdm-column" ? JSON.stringify({ table: "x", column: "y" }) : "",
-    },
-  });
-  expect(useJrdmStore.getState().editingView!.fields).toHaveLength(1);
+  expect(items && "fields" in items && items.fields).toEqual([]); // unchanged — no drop binding
 });
 
 it("a nested field is a treeitem with aria-expanded and aria-selected", () => {

@@ -3,7 +3,6 @@ import { render, screen, fireEvent } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { ReactFlowProvider } from "@xyflow/react";
 import { EntityNode } from "./EntityNode";
-import { DRAG_MIME } from "../document/dropTarget";
 import { useJrdmStore } from "../state/store";
 import type { DraftEntity } from "@jrdm/model";
 
@@ -122,27 +121,25 @@ describe("EntityNode", () => {
     expect(onOpenMenu).toHaveBeenCalledOnce();
   });
 
-  // ── Column drag (ER.T3 responsibility — must stay for now) ──
+  // ── Per-column quick-drag RETIRED (ER.T3) — columns are plain, non-draggable ──
 
-  it("column <li> elements remain draggable (ER.T3 retires these; keep for now)", () => {
+  it("column <li> elements are NOT draggable (per-column quick-drag retired)", () => {
     renderNode();
-    expect(screen.getByTestId("col-order_id")).toHaveAttribute("draggable");
+    expect(screen.getByTestId("col-order_id")).not.toHaveAttribute("draggable");
+    expect(screen.getByTestId("col-customer_id")).not.toHaveAttribute("draggable");
   });
 
-  it("column dragStart sets application/x-jrdm-column payload, not entity MIME", () => {
+  it("column dragStart does NOT set any x-jrdm drag MIME (retired)", () => {
     renderNode();
     const col = screen.getByTestId("col-order_id");
     const setData = vi.fn();
     fireEvent.dragStart(col, {
       dataTransfer: { setData, effectAllowed: "copy" },
     });
-    // Must set column MIME with column name
-    expect(setData).toHaveBeenCalledWith(
-      DRAG_MIME,
-      JSON.stringify({ table: "orders", column: "order_id" }),
+    // No x-jrdm-column nor x-jrdm-entity payload is set — the drag source is gone.
+    const jrdmCall = setData.mock.calls.find(([mime]) =>
+      String(mime).startsWith("application/x-jrdm-"),
     );
-    // Must NOT set entity MIME
-    const entityCall = setData.mock.calls.find(([mime]) => mime === "application/x-jrdm-entity");
-    expect(entityCall).toBeUndefined();
+    expect(jrdmCall).toBeUndefined();
   });
 });

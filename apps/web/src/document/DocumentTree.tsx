@@ -1,10 +1,7 @@
-import type { DragEvent, KeyboardEvent as ReactKeyboardEvent } from "react";
+import type { KeyboardEvent as ReactKeyboardEvent } from "react";
 import { useJrdmStore } from "../state/store";
 import { FieldNode } from "./FieldNode";
-import { DRAG_MIME, parseDragPayload } from "./dropTarget";
-import { ENTITY_DRAG_MIME } from "../diagram/EntityNode";
 import {
-  scalarField,
   addField,
   nestedField,
   getField,
@@ -20,25 +17,6 @@ export function DocumentTree() {
   const selectedFieldPath = useJrdmStore((s) => s.selectedFieldPath);
   const setEditingView = useJrdmStore((s) => s.setEditingView);
   const selectField = useJrdmStore((s) => s.selectField);
-  const openMapping = useJrdmStore((s) => s.openMapping);
-
-  function onDrop(e: DragEvent<HTMLDivElement>) {
-    e.preventDefault();
-
-    // Entity drag (application/x-jrdm-entity): open the Map-to-Document modal.
-    // This path takes priority and does NOT also run the column quick-bind path.
-    const entityTable = e.dataTransfer.getData(ENTITY_DRAG_MIME);
-    if (entityTable) {
-      openMapping(entityTable);
-      return;
-    }
-
-    // Column drag (application/x-jrdm-column): existing quick-bind path unchanged.
-    const raw = e.dataTransfer.getData(DRAG_MIME);
-    const drag = parseDragPayload(raw);
-    if (!drag || !view) return;
-    setEditingView(addField(view, [], scalarField(drag.column, drag.table, drag.column)));
-  }
 
   function onTreeKeyDown(e: ReactKeyboardEvent<HTMLDivElement>) {
     if (!view) return;
@@ -73,12 +51,7 @@ export function DocumentTree() {
   }
 
   return (
-    <div
-      className="p-3 text-sm h-full overflow-auto"
-      data-testid="doctree"
-      onDragOver={(e) => e.preventDefault()}
-      onDrop={onDrop}
-    >
+    <div className="p-3 text-sm h-full overflow-auto" data-testid="doctree">
       <div data-testid="doctree-root" className="mb-2">
         <div className="font-semibold text-accent">
           {view.schema}.{view.name}
