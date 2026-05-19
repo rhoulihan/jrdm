@@ -9,6 +9,10 @@ export interface ToolbarProps {
   onDeploy: () => void;
   onResetSplit: () => void;
   onFit: () => void;
+  /** Show the "Reset view" button (only when a duality view is being edited). */
+  showResetView?: boolean;
+  /** Called when the user clicks "Reset view". */
+  onResetView?: () => void;
 }
 
 const STATUS_LABELS: Record<ConnectionStatus, string> = {
@@ -30,6 +34,8 @@ export function Toolbar({
   onDeploy,
   onResetSplit,
   onFit,
+  showResetView = false,
+  onResetView,
 }: ToolbarProps) {
   return (
     <div
@@ -88,6 +94,21 @@ export function Toolbar({
       >
         Deploy
       </button>
+
+      {showResetView && onResetView && (
+        <>
+          <div className="w-px h-5 bg-jrdm-border mx-1" aria-hidden="true" />
+          <button
+            type="button"
+            data-testid="reset-view"
+            onClick={onResetView}
+            className="px-2 py-1 rounded text-sm text-accent hover:bg-surface-alt focus:outline-none focus:ring-1 focus:ring-accent"
+            aria-label="Reset view — clear the current duality view and start over"
+          >
+            Reset view
+          </button>
+        </>
+      )}
 
       <div className="flex-1" />
 

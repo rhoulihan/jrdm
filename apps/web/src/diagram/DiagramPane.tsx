@@ -8,6 +8,7 @@ import { EntityNode } from "./EntityNode";
 import { RelationshipEdge } from "./RelationshipEdge";
 import { ContextMenu } from "./ContextMenu";
 import { canMapToDocument } from "./canMapToDocument";
+import { canCreateNewView } from "./canCreateNewView";
 import type { GraphNode, GraphEdge } from "./projectToGraph";
 
 interface MenuState {
@@ -26,7 +27,6 @@ export function DiagramPane() {
   const editingView = useJrdmStore((s) => s.editingView);
   const hiddenEntities = useJrdmStore((s) => s.hiddenEntities);
   const openMapping = useJrdmStore((s) => s.openMapping);
-  const startNewView = useJrdmStore((s) => s.startNewView);
   const selectEntity = useJrdmStore((s) => s.selectEntity);
   const setInspectorOpen = useJrdmStore((s) => s.setInspectorOpen);
   const hideEntity = useJrdmStore((s) => s.hideEntity);
@@ -82,6 +82,7 @@ export function DiagramPane() {
       ? `${project.entities.find((e) => e.name === name)!.schema}.${name}`
       : name;
     const canMap = canMapToDocument(editingView);
+    const canNew = canCreateNewView(editingView);
 
     return [
       {
@@ -92,7 +93,9 @@ export function DiagramPane() {
       },
       {
         label: "New duality view from this table",
-        onSelect: () => startNewView(name),
+        onSelect: () => openMapping(name),
+        disabled: !canNew,
+        ...(!canNew ? { title: "Reset the current view to start a new one" } : {}),
       },
       {
         label: "Inspect table",
@@ -110,7 +113,6 @@ export function DiagramPane() {
     menu.entityName,
     editingView,
     openMapping,
-    startNewView,
     selectEntity,
     setInspectorOpen,
     hideEntity,

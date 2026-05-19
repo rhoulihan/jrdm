@@ -4,6 +4,7 @@ import { DiagramPane } from "./DiagramPane";
 import { useJrdmStore } from "../state/store";
 import type { DraftProject, DualityView } from "@jrdm/model";
 import type { NodePositionChange } from "@xyflow/react";
+import { canCreateNewView } from "./canCreateNewView";
 
 // ── Minimal mock of @xyflow/react ────────────────────────────────────────────
 // Captures props passed to <ReactFlow> so we can assert controlled wiring.
@@ -412,7 +413,38 @@ describe("DiagramPane", () => {
     expect(useJrdmStore.getState().mapping).toEqual({ open: true, table: "orders" });
   });
 
-  it("clicking New duality view from this table calls startNewView", () => {
+  // ── NV.T3: "New duality view" ↔ "Map to document" complementary gates ───────
+
+  it("with no editingView: New duality view is ENABLED and clicking calls openMapping", () => {
+    useJrdmStore.getState().setImport({ project, relationships: [], issues: [] });
+    // editingView is null (no view yet)
+    expect(useJrdmStore.getState().editingView).toBeNull();
+    render(<DiagramPane />);
+
+    const onNodeContextMenu = capturedProps.onNodeContextMenu as (
+      e: React.MouseEvent,
+      node: { id: string },
+    ) => void;
+
+    act(() => {
+      onNodeContextMenu(
+        { clientX: 100, clientY: 200, preventDefault: vi.fn() } as unknown as React.MouseEvent,
+        { id: "app.orders" },
+      );
+    });
+
+    const newViewItem = screen.getByTestId("ctxitem-new-duality-view-from-this-table");
+    // Should NOT be aria-disabled
+    expect(newViewItem).not.toHaveAttribute("aria-disabled", "true");
+
+    // Clicking calls openMapping (not startNewView) — mapping modal opens
+    fireEvent.click(newViewItem);
+    expect(useJrdmStore.getState().mapping).toEqual({ open: true, table: "orders" });
+    // editingView remains null (modal was opened, not startNewView called)
+    expect(useJrdmStore.getState().editingView).toBeNull();
+  });
+
+  it("with no editingView: Map to document is DISABLED", () => {
     useJrdmStore.getState().setImport({ project, relationships: [], issues: [] });
     render(<DiagramPane />);
 
@@ -428,8 +460,58 @@ describe("DiagramPane", () => {
       );
     });
 
-    fireEvent.click(screen.getByTestId("ctxitem-new-duality-view-from-this-table"));
-    expect(useJrdmStore.getState().editingView?.root?.table).toBe("orders");
+    const mapItem = screen.getByTestId("ctxitem-map-to-document");
+    expect(mapItem).toHaveAttribute("aria-disabled", "true");
+  });
+
+  it("with an editingView: New duality view is DISABLED (aria-disabled + tooltip)", () => {
+    useJrdmStore.getState().setImport({ project, relationships: [], issues: [] });
+    useJrdmStore.getState().setEditingView(validView);
+    render(<DiagramPane />);
+
+    const onNodeContextMenu = capturedProps.onNodeContextMenu as (
+      e: React.MouseEvent,
+      node: { id: string },
+    ) => void;
+
+    act(() => {
+      onNodeContextMenu(
+        { clientX: 100, clientY: 200, preventDefault: vi.fn() } as unknown as React.MouseEvent,
+        { id: "app.orders" },
+      );
+    });
+
+    const newViewItem = screen.getByTestId("ctxitem-new-duality-view-from-this-table");
+    expect(newViewItem).toHaveAttribute("aria-disabled", "true");
+    expect(newViewItem).toHaveAttribute("title", "Reset the current view to start a new one");
+  });
+
+  it("with an editingView: Map to document is ENABLED", () => {
+    useJrdmStore.getState().setImport({ project, relationships: [], issues: [] });
+    useJrdmStore.getState().setEditingView(validView);
+    render(<DiagramPane />);
+
+    const onNodeContextMenu = capturedProps.onNodeContextMenu as (
+      e: React.MouseEvent,
+      node: { id: string },
+    ) => void;
+
+    act(() => {
+      onNodeContextMenu(
+        { clientX: 100, clientY: 200, preventDefault: vi.fn() } as unknown as React.MouseEvent,
+        { id: "app.orders" },
+      );
+    });
+
+    const mapItem = screen.getByTestId("ctxitem-map-to-document");
+    expect(mapItem).not.toHaveAttribute("aria-disabled", "true");
+  });
+
+  it("the two items are strict complements of canCreateNewView / canMapToDocument", () => {
+    // Null view → canCreateNewView true, canMapToDocument false
+    expect(canCreateNewView(null)).toBe(true);
+    // Non-null view → canCreateNewView false, canMapToDocument true
+    expect(canCreateNewView(validView)).toBe(false);
   });
 
   it("clicking Inspect table calls selectEntity and opens inspector", () => {

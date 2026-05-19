@@ -125,6 +125,36 @@ describe("Toolbar", () => {
     expect(onFit).toHaveBeenCalledTimes(1);
   });
 
+  // ── Reset view button (NV.T3) ─────────────────────────────────────────────
+
+  it("reset-view button is absent when onResetView is not provided", () => {
+    render(<Toolbar {...makeToolbarProps()} />);
+    expect(screen.queryByTestId("reset-view")).toBeNull();
+  });
+
+  it("reset-view button is absent when showResetView is false", () => {
+    render(<Toolbar {...makeToolbarProps({ showResetView: false, onResetView: vi.fn() })} />);
+    expect(screen.queryByTestId("reset-view")).toBeNull();
+  });
+
+  it("reset-view button is present when showResetView is true", () => {
+    render(<Toolbar {...makeToolbarProps({ showResetView: true, onResetView: vi.fn() })} />);
+    expect(screen.getByTestId("reset-view")).toBeInTheDocument();
+  });
+
+  it("reset-view button calls onResetView when clicked", () => {
+    const onResetView = vi.fn();
+    render(<Toolbar {...makeToolbarProps({ showResetView: true, onResetView })} />);
+    fireEvent.click(screen.getByTestId("reset-view"));
+    expect(onResetView).toHaveBeenCalledTimes(1);
+  });
+
+  it("reset-view button has accessible label", () => {
+    render(<Toolbar {...makeToolbarProps({ showResetView: true, onResetView: vi.fn() })} />);
+    const btn = screen.getByTestId("reset-view");
+    expect(btn).toHaveAttribute("aria-label", expect.stringContaining("Reset view"));
+  });
+
   // ── No store import ───────────────────────────────────────────────────────
 
   it("is pure/controlled with no store coupling", () => {

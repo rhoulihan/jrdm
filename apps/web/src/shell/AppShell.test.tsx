@@ -113,6 +113,21 @@ describe("AppShell", () => {
   });
 
   // M.T5: MapToDocumentModal is mounted once in AppShell (self-gates on mapping.open)
+  // NV.T3: Reset view button wiring in AppShell
+  it("Reset view button is absent when no editingView exists", () => {
+    render(<AppShell />);
+    expect(screen.queryByTestId("reset-view")).not.toBeInTheDocument();
+  });
+
+  it("Reset view button is present when editingView exists and calls resetEditor", async () => {
+    useJrdmStore.getState().startNewView("orders");
+    render(<AppShell />);
+    const btn = screen.getByTestId("reset-view");
+    expect(btn).toBeInTheDocument();
+    await userEvent.click(btn);
+    expect(useJrdmStore.getState().editingView).toBeNull();
+  });
+
   it("MapToDocumentModal is NOT visible by default (mapping.open=false)", () => {
     render(<AppShell />);
     // When mapping.open=false the modal self-gates (returns null) — no dialog
