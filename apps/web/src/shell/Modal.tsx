@@ -6,6 +6,8 @@ export interface ModalProps {
   title: string;
   onClose: () => void;
   children: React.ReactNode;
+  /** Optional size override. Defaults to "md" (max-w-lg). "lg" = max-w-4xl for wider dialogs. */
+  size?: "md" | "lg";
 }
 
 const FOCUSABLE_SELECTORS =
@@ -17,7 +19,12 @@ function getFocusableElements(container: HTMLElement): HTMLElement[] {
   );
 }
 
-export function Modal({ open, title, onClose, children }: ModalProps) {
+const SIZE_CLASSES: Record<NonNullable<ModalProps["size"]>, string> = {
+  md: "max-w-lg",
+  lg: "max-w-4xl",
+};
+
+export function Modal({ open, title, onClose, children, size = "md" }: ModalProps) {
   const dialogRef = useRef<HTMLDivElement>(null);
   const openerRef = useRef<Element | null>(null);
 
@@ -111,7 +118,7 @@ export function Modal({ open, title, onClose, children }: ModalProps) {
         aria-modal="true"
         aria-label={title}
         tabIndex={-1}
-        className="fixed z-50 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-surface-alt border border-jrdm-border rounded-lg shadow-xl w-full max-w-lg p-6 focus:outline-none"
+        className={`fixed z-50 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-surface-alt border border-jrdm-border rounded-lg shadow-xl w-full ${SIZE_CLASSES[size]} p-6 focus:outline-none`}
         onKeyDown={handleDialogKeyDown}
         onClick={(e) => e.stopPropagation()}
       >

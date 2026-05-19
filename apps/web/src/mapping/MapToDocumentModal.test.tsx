@@ -356,6 +356,104 @@ describe("MapToDocumentModal", () => {
     expect(useJrdmStore.getState().mapping.open).toBe(false);
   });
 
+  // ── NV.T2: Modal sizing ───────────────────────────────────────────────────
+
+  it("NV.T2: modal dialog uses the lg size class (max-w-4xl)", () => {
+    seedStore({ table: "ORDERS", editingView: null });
+    render(<MapToDocumentModal />);
+    const dialog = screen.getByRole("dialog");
+    expect(dialog.className).toMatch(/max-w-4xl/);
+  });
+
+  it("NV.T2: right tree region has flex-[2] class (more space than left fixed width)", () => {
+    seedStore({ table: "ORDERS", editingView: null });
+    render(<MapToDocumentModal />);
+    const treeRegion = screen.getByTestId("map-tree-region");
+    expect(treeRegion.className).toMatch(/flex-\[2\]/);
+  });
+
+  it("NV.T2: left field-list region is a fixed narrower width (w-52)", () => {
+    seedStore({ table: "ORDERS", editingView: null });
+    render(<MapToDocumentModal />);
+    const fieldRegion = screen.getByTestId("map-field-list-region");
+    expect(fieldRegion.className).toMatch(/w-52/);
+  });
+
+  // ── NV.T2: Create-root mode ───────────────────────────────────────────────
+
+  it("NV.T2: create-root mode — + add node is disabled with tooltip", () => {
+    seedStore({ table: "ORDERS", editingView: null });
+    render(<MapToDocumentModal />);
+    const addBtn = screen.getByTestId("add-node-btn");
+    expect(addBtn).toBeDisabled();
+    expect(addBtn.getAttribute("title")).toMatch(/root is the document root/i);
+  });
+
+  it("NV.T2: create-root mode — − delete is disabled with tooltip", () => {
+    seedStore({ table: "ORDERS", editingView: null });
+    render(<MapToDocumentModal />);
+    const delBtn = screen.getByTestId("delete-node-btn");
+    expect(delBtn).toBeDisabled();
+    expect(delBtn.getAttribute("title")).toMatch(/root is the document root/i);
+  });
+
+  it("NV.T2: create-root Save maps selected columns to root with _id from PK (non-tautological sample)", async () => {
+    const user = userEvent.setup();
+    seedStore({ table: "ORDERS", editingView: null });
+    render(<MapToDocumentModal />);
+
+    // Check two columns
+    await user.click(screen.getByTestId("field-status"));
+    await user.click(screen.getByTestId("field-created_at"));
+    // Save directly — no need to click + add node (root is auto-initialized)
+    await user.click(screen.getByTestId("map-save"));
+
+    const view = useJrdmStore.getState().editingView!;
+    expect(view).toBeTruthy();
+    expect(view.root.table).toBe("ORDERS");
+    // _id seeded from PK
+    expect(view.fields[0]).toEqual({ key: "_id", source: "ORDERS.id" });
+    // Checked columns appear as root scalar fields
+    const scalarKeys = view.fields.slice(1).map((f) => ("key" in f ? f.key : null));
+    expect(scalarKeys).toContain("status");
+    expect(scalarKeys).toContain("created_at");
+    // Non-tautological sample doc: concrete root key + SAMPLE0000 etag
+    const doc = sampleDoc();
+    expect(doc._id).toBe(123); // ORDERS.id NUMBER → 123
+    expect((doc._metadata as { etag: string }).etag).toBe("SAMPLE0000");
+    expect("status" in doc).toBe(true);
+  });
+
+  it("NV.T2: create-root Save with no columns checked still commits root (just _id)", async () => {
+    const user = userEvent.setup();
+    seedStore({ table: "ORDERS", editingView: null });
+    render(<MapToDocumentModal />);
+
+    // Save with no columns checked
+    await user.click(screen.getByTestId("map-save"));
+
+    const view = useJrdmStore.getState().editingView!;
+    expect(view.root.table).toBe("ORDERS");
+    expect(view.fields[0]).toEqual({ key: "_id", source: "ORDERS.id" });
+    // Only _id at root (no extra scalars)
+    expect(view.fields).toHaveLength(1);
+  });
+
+  it("NV.T2: embed mode — + add node and − delete remain enabled with existing editingView", async () => {
+    const user = userEvent.setup();
+    seedStore({ table: "ORDER_ITEMS", editingView: ORDERS_VIEW, relationships: [REL_1N] });
+    render(<MapToDocumentModal />);
+
+    expect(screen.getByTestId("add-node-btn")).not.toBeDisabled();
+
+    // Select a session-new node: click + add node then select
+    await user.click(screen.getByTestId("mnode-0"));
+    await user.click(screen.getByTestId("add-node-btn"));
+    // New node added (mnode-2)
+    expect(screen.getByTestId("mnode-2")).toBeInTheDocument();
+    expect(screen.getByTestId("delete-node-btn")).not.toBeDisabled();
+  });
+
   it("scopes its tree query (no markup contortion — single dialog, single tree)", () => {
     seedStore({ table: "ORDER_ITEMS", editingView: ORDERS_VIEW });
     render(<MapToDocumentModal />);

@@ -222,6 +222,46 @@ describe("Modal", () => {
     document.body.removeChild(openerButton);
   });
 
+  // ── Size prop ─────────────────────────────────────────────────────────────
+
+  it("default (no size prop) uses max-w-lg class", () => {
+    renderModal();
+    const dialog = screen.getByRole("dialog");
+    expect(dialog.className).toMatch(/max-w-lg/);
+  });
+
+  it("size='md' explicitly uses max-w-lg class", () => {
+    renderModal({ size: "md" });
+    const dialog = screen.getByRole("dialog");
+    expect(dialog.className).toMatch(/max-w-lg/);
+  });
+
+  it("size='lg' uses max-w-4xl class (larger than default)", () => {
+    renderModal({ size: "lg" });
+    const dialog = screen.getByRole("dialog");
+    expect(dialog.className).toMatch(/max-w-4xl/);
+    expect(dialog.className).not.toMatch(/max-w-lg/);
+  });
+
+  it("size='lg' does not break a11y: dialog role, aria-modal, aria-label all intact", () => {
+    renderModal({ size: "lg", title: "Large Accessible Dialog" });
+    const dialog = screen.getByRole("dialog");
+    expect(dialog).toHaveAttribute("aria-modal", "true");
+    expect(dialog).toHaveAttribute("aria-label", "Large Accessible Dialog");
+  });
+
+  it("other Modal callers without size prop are unaffected (still max-w-lg)", () => {
+    // Simulate a second caller that does not pass size (like connection/settings modals)
+    render(
+      <Modal open={true} title="Settings" onClose={vi.fn()}>
+        <span>settings content</span>
+      </Modal>,
+    );
+    const dialog = screen.getByRole("dialog");
+    expect(dialog.className).toMatch(/max-w-lg/);
+    expect(dialog.className).not.toMatch(/max-w-4xl/);
+  });
+
   // ── No store import ───────────────────────────────────────────────────────
 
   it("is pure — renders without any store provider", () => {

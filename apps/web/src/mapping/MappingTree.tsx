@@ -34,6 +34,12 @@ export interface MappingTreeProps {
   onDeleteNode: () => void;
   /** Called when the user toggles the embed-as-array checkbox (non-FK-driven) */
   onToggleEmbed: () => void;
+  /**
+   * Create-root mode: when true (editingView===null), the entity IS the document
+   * root — path-building via +/− is meaningless, so both buttons are disabled
+   * with an explanatory tooltip.
+   */
+  createRootMode?: boolean;
 }
 
 // ── Internal: tree-node path helpers ─────────────────────────────────────────
@@ -142,15 +148,22 @@ export function MappingTree({
   onAddNode,
   onDeleteNode,
   onToggleEmbed,
+  createRootMode = false,
 }: MappingTreeProps) {
   const view = toDualityView(workingCopy);
 
   // ── Determine if − delete is enabled ──────────────────────────────────────
-  const deleteEnabled = selectedPath !== null && !isLocked(workingCopy, selectedPath);
+  const deleteEnabled =
+    !createRootMode && selectedPath !== null && !isLocked(workingCopy, selectedPath);
 
-  // ── + add node label: convey root vs subnode semantics ────────────────────
-  const addLabel =
-    selectedPath === null ? "Add root node (no node selected)" : "Add subnode under selected";
+  // ── + add node label / disabled state ────────────────────────────────────
+  const createRootTooltip =
+    "A duality view's root is the document root — add child tables later via Map to document";
+  const addLabel = createRootMode
+    ? createRootTooltip
+    : selectedPath === null
+      ? "Add root node (no node selected)"
+      : "Add subnode under selected";
 
   // ── Embed checkbox: compute FK-driven state ────────────────────────────────
   const showEmbedCheckbox = Boolean(parentTable);
@@ -254,10 +267,16 @@ export function MappingTree({
         <button
           type="button"
           data-testid="add-node-btn"
-          onClick={onAddNode}
+          onClick={createRootMode ? undefined : onAddNode}
+          disabled={createRootMode}
           aria-label={addLabel}
           title={addLabel}
-          className="flex-1 text-xs border border-jrdm-border rounded px-2 py-1 bg-surface-alt hover:bg-surface focus:outline-none focus:ring-1 focus:ring-accent"
+          className={[
+            "flex-1 text-xs border border-jrdm-border rounded px-2 py-1",
+            createRootMode
+              ? "bg-surface-alt opacity-40 cursor-not-allowed"
+              : "bg-surface-alt hover:bg-surface focus:outline-none focus:ring-1 focus:ring-accent",
+          ].join(" ")}
         >
           + add node
         </button>
@@ -269,11 +288,13 @@ export function MappingTree({
           disabled={!deleteEnabled}
           aria-label="Delete selected node (session-new only)"
           title={
-            selectedPath === null
-              ? "No node selected"
-              : !deleteEnabled
-                ? "Locked nodes cannot be deleted"
-                : "Delete selected node"
+            createRootMode
+              ? createRootTooltip
+              : selectedPath === null
+                ? "No node selected"
+                : !deleteEnabled
+                  ? "Locked nodes cannot be deleted"
+                  : "Delete selected node"
           }
           className={[
             "flex-1 text-xs border border-jrdm-border rounded px-2 py-1",
