@@ -27,6 +27,7 @@ export function AppShell() {
   const schemaLoad = useJrdmStore((s) => s.schemaLoad);
   const selectedEntity = useJrdmStore((s) => s.selectedEntity);
   const startNewView = useJrdmStore((s) => s.startNewView);
+  const resetEditor = useJrdmStore((s) => s.resetEditor);
 
   const splitRatio = useJrdmStore((s) => s.splitRatio);
   const splitCollapsed = useJrdmStore((s) => s.splitCollapsed);
@@ -141,6 +142,8 @@ export function AppShell() {
         onDeploy={openDeploy}
         onResetSplit={() => setSplitRatio(0.5)}
         onFit={() => setSplitCollapsed(null)}
+        showResetView={editingView !== null}
+        onResetView={resetEditor}
       />
 
       {selectedEntity && (
