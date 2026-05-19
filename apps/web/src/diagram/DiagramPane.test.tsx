@@ -1,8 +1,8 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
-import { render, screen, act } from "@testing-library/react";
+import { render, screen, act, fireEvent } from "@testing-library/react";
 import { DiagramPane } from "./DiagramPane";
 import { useJrdmStore } from "../state/store";
-import type { DraftProject } from "@jrdm/model";
+import type { DraftProject, DualityView } from "@jrdm/model";
 import type { NodePositionChange } from "@xyflow/react";
 
 // ── Minimal mock of @xyflow/react ────────────────────────────────────────────
@@ -21,14 +21,19 @@ vi.mock("@xyflow/react", async () => {
     capturedProps = props;
     const nodes = (props.nodes as Array<{ id: string; type?: string; data: unknown }>) ?? [];
     const nodeTypes =
-      (props.nodeTypes as Record<string, React.ComponentType<{ id: string; data: unknown }>>) ?? {};
+      (props.nodeTypes as Record<
+        string,
+        React.ComponentType<{ id: string; data: unknown; onOpenMenu?: unknown }>
+      >) ?? {};
 
     return (
       <ReactFlowProvider>
         <div data-testid="mock-reactflow">
           {nodes.map((n) => {
             const NodeComp = nodeTypes[n.type ?? ""] ?? null;
-            return NodeComp ? <NodeComp key={n.id} id={n.id} data={n.data} /> : null;
+            return NodeComp ? (
+              <NodeComp key={n.id} id={n.id} data={n.data} onOpenMenu={props._onOpenMenu} />
+            ) : null;
           })}
           {props.children as React.ReactNode}
         </div>
@@ -98,6 +103,18 @@ const projectSameNameSameCount: DraftProject = {
   views: [],
 };
 
+const validView: DualityView = {
+  name: "orders_dv",
+  schema: "app",
+  createMode: "orReplace",
+  root: {
+    table: "orders",
+    permissions: { insert: false, update: false, delete: false },
+    etag: "check",
+  },
+  fields: [{ key: "_id", source: "orders.id" }],
+};
+
 describe("DiagramPane", () => {
   beforeEach(() => {
     capturedProps = {};
@@ -148,7 +165,9 @@ describe("DiagramPane", () => {
     expect(capturedProps.minZoom).toBe(0.1);
   });
 
-  it("a simulated NodePositionChange persists across an unrelated re-render", () => {
+  // ── Hard guardrail: React Flow node-drag (repositioning) must remain wired ──
+
+  it("a simulated NodePositionChange persists across an unrelated re-render (node-drag/reposition intact)", () => {
     useJrdmStore.getState().setImport({ project, relationships: [], issues: [] });
     const { rerender } = render(<DiagramPane />);
 
@@ -183,7 +202,7 @@ describe("DiagramPane", () => {
     expect(moved?.position.y).toBe(888);
   });
 
-  it("same-project re-render does NOT reset node positions", () => {
+  it("same-project re-render does NOT reset node positions (node-drag intact)", () => {
     useJrdmStore.getState().setImport({ project, relationships: [], issues: [] });
     const { rerender } = render(<DiagramPane />);
 
@@ -298,5 +317,202 @@ describe("DiagramPane", () => {
     // — it came from a fresh layout, not the stale one.
     const productsNode = nodesAfter.find((n) => n.id === "app.products");
     expect(productsNode?.position.x).not.toBe(777);
+  });
+
+  // ── Context menu: right-click and ⋯ button ────────────────────────────────
+
+  it("right-clicking a node opens the context menu with 4 items", () => {
+    useJrdmStore.getState().setImport({ project, relationships: [], issues: [] });
+    render(<DiagramPane />);
+
+    // Trigger onNodeContextMenu via the captured prop
+    const onNodeContextMenu = capturedProps.onNodeContextMenu as (
+      e: React.MouseEvent,
+      node: { id: string },
+    ) => void;
+    expect(typeof onNodeContextMenu).toBe("function");
+
+    act(() => {
+      onNodeContextMenu(
+        { clientX: 100, clientY: 200, preventDefault: vi.fn() } as unknown as React.MouseEvent,
+        { id: "app.orders" },
+      );
+    });
+
+    expect(screen.getByTestId("entity-context-menu")).toBeInTheDocument();
+    expect(screen.getByTestId("ctxitem-map-to-document")).toBeInTheDocument();
+    expect(screen.getByTestId("ctxitem-new-duality-view-from-this-table")).toBeInTheDocument();
+    expect(screen.getByTestId("ctxitem-inspect-table")).toBeInTheDocument();
+    expect(screen.getByTestId("ctxitem-hide-from-canvas")).toBeInTheDocument();
+  });
+
+  it("Map to document… is disabled (aria-disabled + title) when editingView is null", () => {
+    useJrdmStore.getState().setImport({ project, relationships: [], issues: [] });
+    render(<DiagramPane />);
+
+    const onNodeContextMenu = capturedProps.onNodeContextMenu as (
+      e: React.MouseEvent,
+      node: { id: string },
+    ) => void;
+
+    act(() => {
+      onNodeContextMenu(
+        { clientX: 100, clientY: 200, preventDefault: vi.fn() } as unknown as React.MouseEvent,
+        { id: "app.orders" },
+      );
+    });
+
+    const mapItem = screen.getByTestId("ctxitem-map-to-document");
+    expect(mapItem).toHaveAttribute("aria-disabled", "true");
+    expect(mapItem).toHaveAttribute(
+      "title",
+      "Create a root view first (New duality view from this table)",
+    );
+  });
+
+  it("Map to document… is enabled when editingView exists", () => {
+    useJrdmStore.getState().setImport({ project, relationships: [], issues: [] });
+    useJrdmStore.getState().setEditingView(validView);
+    render(<DiagramPane />);
+
+    const onNodeContextMenu = capturedProps.onNodeContextMenu as (
+      e: React.MouseEvent,
+      node: { id: string },
+    ) => void;
+
+    act(() => {
+      onNodeContextMenu(
+        { clientX: 100, clientY: 200, preventDefault: vi.fn() } as unknown as React.MouseEvent,
+        { id: "app.orders" },
+      );
+    });
+
+    const mapItem = screen.getByTestId("ctxitem-map-to-document");
+    expect(mapItem).not.toHaveAttribute("aria-disabled");
+  });
+
+  it("clicking Map to document… calls openMapping with entity name", () => {
+    useJrdmStore.getState().setImport({ project, relationships: [], issues: [] });
+    useJrdmStore.getState().setEditingView(validView);
+    render(<DiagramPane />);
+
+    const onNodeContextMenu = capturedProps.onNodeContextMenu as (
+      e: React.MouseEvent,
+      node: { id: string },
+    ) => void;
+
+    act(() => {
+      onNodeContextMenu(
+        { clientX: 100, clientY: 200, preventDefault: vi.fn() } as unknown as React.MouseEvent,
+        { id: "app.orders" },
+      );
+    });
+
+    fireEvent.click(screen.getByTestId("ctxitem-map-to-document"));
+    expect(useJrdmStore.getState().mapping).toEqual({ open: true, table: "orders" });
+  });
+
+  it("clicking New duality view from this table calls startNewView", () => {
+    useJrdmStore.getState().setImport({ project, relationships: [], issues: [] });
+    render(<DiagramPane />);
+
+    const onNodeContextMenu = capturedProps.onNodeContextMenu as (
+      e: React.MouseEvent,
+      node: { id: string },
+    ) => void;
+
+    act(() => {
+      onNodeContextMenu(
+        { clientX: 100, clientY: 200, preventDefault: vi.fn() } as unknown as React.MouseEvent,
+        { id: "app.orders" },
+      );
+    });
+
+    fireEvent.click(screen.getByTestId("ctxitem-new-duality-view-from-this-table"));
+    expect(useJrdmStore.getState().editingView?.root?.table).toBe("orders");
+  });
+
+  it("clicking Inspect table calls selectEntity and opens inspector", () => {
+    useJrdmStore.getState().setImport({ project, relationships: [], issues: [] });
+    render(<DiagramPane />);
+
+    const onNodeContextMenu = capturedProps.onNodeContextMenu as (
+      e: React.MouseEvent,
+      node: { id: string },
+    ) => void;
+
+    act(() => {
+      onNodeContextMenu(
+        { clientX: 100, clientY: 200, preventDefault: vi.fn() } as unknown as React.MouseEvent,
+        { id: "app.orders" },
+      );
+    });
+
+    fireEvent.click(screen.getByTestId("ctxitem-inspect-table"));
+    expect(useJrdmStore.getState().selectedEntity).toBe("app.orders");
+    expect(useJrdmStore.getState().inspectorOpen).toBe(true);
+  });
+
+  it("clicking Hide from canvas calls hideEntity and filters node from render", () => {
+    useJrdmStore.getState().setImport({ project, relationships: [], issues: [] });
+    render(<DiagramPane />);
+
+    const onNodeContextMenu = capturedProps.onNodeContextMenu as (
+      e: React.MouseEvent,
+      node: { id: string },
+    ) => void;
+
+    act(() => {
+      onNodeContextMenu(
+        { clientX: 100, clientY: 200, preventDefault: vi.fn() } as unknown as React.MouseEvent,
+        { id: "app.orders" },
+      );
+    });
+
+    act(() => {
+      fireEvent.click(screen.getByTestId("ctxitem-hide-from-canvas"));
+    });
+
+    expect(useJrdmStore.getState().hiddenEntities).toContain("orders");
+
+    // The filtered nodes passed to ReactFlow should not include the hidden entity
+    const renderedNodes = capturedProps.nodes as Array<{ id: string }>;
+    expect(renderedNodes.some((n) => n.id === "app.orders")).toBe(false);
+  });
+
+  it("Show hidden (N) control appears when entities are hidden and restores them", () => {
+    useJrdmStore.getState().setImport({ project, relationships: [], issues: [] });
+    useJrdmStore.getState().hideEntity("orders");
+    render(<DiagramPane />);
+
+    const showHiddenBtn = screen.getByTestId("show-hidden");
+    expect(showHiddenBtn).toBeInTheDocument();
+    expect(showHiddenBtn).toHaveTextContent("1");
+
+    fireEvent.click(showHiddenBtn);
+    expect(useJrdmStore.getState().hiddenEntities).toEqual([]);
+  });
+
+  it("Show hidden control is absent when no entities are hidden", () => {
+    useJrdmStore.getState().setImport({ project, relationships: [], issues: [] });
+    render(<DiagramPane />);
+    expect(screen.queryByTestId("show-hidden")).toBeNull();
+  });
+
+  it("⋯ button in EntityNode opens the same context menu", () => {
+    useJrdmStore.getState().setImport({ project, relationships: [], issues: [] });
+    render(<DiagramPane />);
+
+    // The mock passes onOpenMenu down; click the ⋯ button
+    const menuBtn = screen.getByTestId("entity-menu-orders");
+    fireEvent.click(menuBtn);
+
+    expect(screen.getByTestId("entity-context-menu")).toBeInTheDocument();
+  });
+
+  it("onNodeContextMenu passes through correctly (wired to ReactFlow)", () => {
+    useJrdmStore.getState().setImport({ project, relationships: [], issues: [] });
+    render(<DiagramPane />);
+    expect(typeof capturedProps.onNodeContextMenu).toBe("function");
   });
 });
