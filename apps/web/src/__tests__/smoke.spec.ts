@@ -305,9 +305,13 @@ test("entity context-menu: right-click / ⋯ → menu items / gating / new-view 
   const newViewModal = page.getByTestId("map-to-document");
   await expect(newViewModal).toBeVisible();
 
-  // In create-root mode the +/- path-building buttons are disabled.
+  // In create-root mode BOTH path-building buttons are disabled (NV.T2 verified fact:
+  // a duality view's root cannot be nested — +/− serve no purpose here).
   const addNodeBtnCreateRoot = page.getByTestId("add-node-btn");
   await expect(addNodeBtnCreateRoot).toBeDisabled();
+  // − delete must also be disabled in create-root mode.
+  const deleteNodeBtnCreateRoot = page.getByTestId("delete-node-btn");
+  await expect(deleteNodeBtnCreateRoot).toBeDisabled();
 
   // Save the modal (even with no fields selected — just creates the root entity).
   await page.getByTestId("map-save").click();
@@ -316,7 +320,22 @@ test("entity context-menu: right-click / ⋯ → menu items / gating / new-view 
   await expect(newViewModal).not.toBeVisible();
   await expect(page.getByTestId("doctree")).toBeVisible();
 
-  // ── 3a. NV.T3: After creating a view, "New duality view…" is DISABLED ────
+  // ── 3a. NV.T4: After Save the synthetic sample document is immediately visible ──
+  // Open the Deploy dock and verify the root document produced by create-root Save.
+  // "orders.order_id" is NUMBER → sampleDocument emits _id=123 (the NUMBER sample
+  // value). This assertion fails if setEditingView / setSampleDocs was never called
+  // (i.e., if Save was a no-op in create-root mode).
+  await openDock(page, "Deploy");
+  const dockAfterCreate = page.getByTestId("bottom-dock");
+  await expect(dockAfterCreate.getByTestId("doc-row-123")).toBeVisible();
+  // The synthetic etag SAMPLE0000 comes only from sampleDocument(), not /api/sample.
+  await expect(dockAfterCreate.getByTestId("doc-etag-123")).toContainText("SAMPLE0000");
+
+  // Collapse the dock before right-clicking nodes — the expanded dock's tab bar
+  // overlaps the ERD canvas and intercepts pointer events on lower nodes.
+  await page.getByTestId("dock-collapse").click();
+
+  // ── 3b. NV.T3: After creating a view, "New duality view…" is DISABLED ────
   // Reset view button should now be visible in the Toolbar.
   await expect(page.getByTestId("reset-view")).toBeVisible();
 
@@ -329,9 +348,37 @@ test("entity context-menu: right-click / ⋯ → menu items / gating / new-view 
     "title",
     "Reset the current view to start a new one",
   );
-  // Close the menu.
+  // All entities should have "New duality view…" disabled after a view exists.
+  // Verify on order_items as well (the ⋯ menu for a second entity).
+  // Close the current menu first.
   await page.keyboard.press("Escape");
   await expect(ctxMenu).not.toBeVisible();
+
+  // ── 3c. NV.T4: Reset view → "New duality view…" re-enabled ───────────────
+  // Clicking "Reset view" calls resetEditor() which clears editingView/sampleDocs
+  // but preserves the imported project — no re-import needed.
+  await page.getByTestId("reset-view").click();
+  // After reset, doctree should be gone (no editingView) and "Reset view" hidden.
+  await expect(page.getByTestId("reset-view")).not.toBeVisible();
+  // Right-click orders to confirm "New duality view…" is enabled again.
+  await ordersNode.click({ button: "right" });
+  await expect(ctxMenu).toBeVisible();
+  const newViewItemAfterReset = page.getByTestId("ctxitem-new-duality-view-from-this-table");
+  // Must NOT have aria-disabled (re-enabled by resetEditor()).
+  await expect(newViewItemAfterReset).not.toHaveAttribute("aria-disabled", "true");
+  // Close the menu before continuing.
+  await page.keyboard.press("Escape");
+  await expect(ctxMenu).not.toBeVisible();
+
+  // Re-create the root view so the rest of the test (Map to document → embed) can proceed.
+  await ordersNode.click({ button: "right" });
+  await expect(ctxMenu).toBeVisible();
+  await page.getByTestId("ctxitem-new-duality-view-from-this-table").click();
+  const newViewModal2 = page.getByTestId("map-to-document");
+  await expect(newViewModal2).toBeVisible();
+  await page.getByTestId("map-save").click();
+  await expect(newViewModal2).not.toBeVisible();
+  await expect(page.getByTestId("doctree")).toBeVisible();
 
   // ── 4. Open the context menu via the ⋯ button for "order_items" ─────────
   // The ⋯ button is the visible affordance on the entity header (EntityNode).
