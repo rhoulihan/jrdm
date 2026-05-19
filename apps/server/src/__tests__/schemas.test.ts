@@ -1,4 +1,5 @@
 // @tested-by: apps/server/src/__tests__/schemas.test.ts
+// exec closure now accepts optional binds (required by QueryExec<T>(sql, binds?) signature)
 import { describe, it, expect } from "vitest";
 import { buildApp } from "../app";
 

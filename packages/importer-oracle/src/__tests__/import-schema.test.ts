@@ -1,9 +1,12 @@
+/* eslint-disable @typescript-eslint/require-await */
 import { describe, it, expect } from "vitest";
 import { importSchema, type QueryExec } from "../import-schema";
 import { TABLES_SQL, COLUMNS_SQL, PK_UK_SQL, FK_SQL } from "../dictionary-sql";
 
-// eslint-disable-next-line @typescript-eslint/require-await
-const fakeExec: QueryExec = async <T>(sql: string): Promise<T[]> => {
+const fakeExec: QueryExec = async <T>(
+  sql: string,
+  _binds?: Record<string, unknown>,
+): Promise<T[]> => {
   if (sql === TABLES_SQL) return [{ TABLE_NAME: "ORDERS" }, { TABLE_NAME: "CUSTOMERS" }] as T[];
   if (sql === COLUMNS_SQL)
     return [
@@ -94,10 +97,43 @@ describe("importSchema", () => {
     expect(parseProject(stringifyProject(project))).toEqual(project);
   });
 
+  it("passes { owner: schemaOwner } binds to every dictionary exec call", async () => {
+    const calls: Array<{ sql: string; binds: Record<string, unknown> | undefined }> = [];
+    const spyExec: QueryExec = async <T>(
+      sql: string,
+      binds?: Record<string, unknown>,
+    ): Promise<T[]> => {
+      calls.push({ sql, binds });
+      return await fakeExec<T>(sql, binds);
+    };
+    await importSchema(spyExec, { schemaOwner: "ORDERS_DEMO", projectName: "test" });
+
+    // All four dictionary queries must have been called
+    expect(calls).toHaveLength(4);
+
+    // Every call must carry { owner: "ORDERS_DEMO" }
+    for (const call of calls) {
+      expect(call.binds).toEqual({ owner: "ORDERS_DEMO" });
+    }
+
+    // Verify the actual SQL constants are used (ALL_* views, not USER_*)
+    const sqls = calls.map((c) => c.sql);
+    expect(sqls).toContain(TABLES_SQL);
+    expect(sqls).toContain(COLUMNS_SQL);
+    expect(sqls).toContain(PK_UK_SQL);
+    expect(sqls).toContain(FK_SQL);
+    expect(TABLES_SQL).toContain("ALL_TABLES");
+    expect(COLUMNS_SQL).toContain("ALL_TAB_COLUMNS");
+    expect(PK_UK_SQL).toContain("ALL_CONSTRAINTS");
+    expect(FK_SQL).toContain("ALL_CONSTRAINTS");
+  });
+
   it("surfaces validator issues without throwing and returns a valid DraftProject", async () => {
     const { DraftProjectSchema } = await import("@jrdm/model");
-    // eslint-disable-next-line @typescript-eslint/require-await
-    const noPkExec: QueryExec = async <T>(sql: string): Promise<T[]> => {
+    const noPkExec: QueryExec = async <T>(
+      sql: string,
+      _binds?: Record<string, unknown>,
+    ): Promise<T[]> => {
       if (sql === TABLES_SQL) return [{ TABLE_NAME: "ORDERS" }] as T[];
       if (sql === COLUMNS_SQL)
         return [
@@ -124,8 +160,10 @@ describe("importSchema", () => {
   });
 
   it("emits an UNMAPPED_TYPE warning issue for unknown Oracle column types", async () => {
-    // eslint-disable-next-line @typescript-eslint/require-await
-    const exec: QueryExec = async <T>(sql: string): Promise<T[]> => {
+    const exec: QueryExec = async <T>(
+      sql: string,
+      _binds?: Record<string, unknown>,
+    ): Promise<T[]> => {
       if (sql === TABLES_SQL) return [{ TABLE_NAME: "GEO" }] as T[];
       if (sql === COLUMNS_SQL)
         return [
