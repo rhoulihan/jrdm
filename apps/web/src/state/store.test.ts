@@ -449,3 +449,125 @@ describe("useJrdmStore — hiddenEntities slice", () => {
     expect(useJrdmStore.getState().hiddenEntities).toEqual([]);
   });
 });
+
+describe("useJrdmStore — resetEditor()", () => {
+  const seededView: DualityView = {
+    name: "orders_dv",
+    schema: "app",
+    createMode: "orReplace",
+    root: {
+      table: "orders",
+      permissions: { insert: false, update: false, delete: false },
+      etag: "check",
+    },
+    fields: [{ key: "_id", source: "orders.order_id" }],
+  };
+
+  beforeEach(() => {
+    // Start from a fresh reset then populate all slices
+    useJrdmStore.getState().reset();
+    // Seed project/relationships via setImport
+    useJrdmStore.getState().setImport({ project, relationships: rels, issues: [] });
+    // Seed schemas
+    useJrdmStore.getState().setSchemas(["APP", "SALES"]);
+    useJrdmStore.getState().selectSchema("APP");
+    // Seed hiddenEntities
+    useJrdmStore.getState().hideEntity("CUSTOMERS");
+    // Seed layout (bypass persistence; set via setState)
+    useJrdmStore.setState({
+      splitRatio: 0.75,
+      splitCollapsed: "right" as const,
+      dockOpen: true,
+      dockTab: "issues" as const,
+      inspectorOpen: true,
+      inspectorPinned: true,
+    });
+    // Seed working-view state
+    useJrdmStore.getState().setEditingView(seededView);
+    useJrdmStore.getState().setSampleDocs([{ _id: 1, name: "SAMPLE0001" }]);
+    useJrdmStore.getState().openMapping("orders");
+    useJrdmStore.getState().selectField([0, 1]);
+    useJrdmStore.getState().setDeployState("deployed", "3 stmts");
+    useJrdmStore.getState().selectDoc(1);
+    useJrdmStore.getState().setConflict({ message: "ETag mismatch" });
+  });
+
+  it("clears editingView to null", () => {
+    useJrdmStore.getState().resetEditor();
+    expect(useJrdmStore.getState().editingView).toBeNull();
+  });
+
+  it("closes mapping (open:false, table:null)", () => {
+    useJrdmStore.getState().resetEditor();
+    expect(useJrdmStore.getState().mapping).toEqual({ open: false, table: null });
+  });
+
+  it("clears sampleDocs to []", () => {
+    useJrdmStore.getState().resetEditor();
+    expect(useJrdmStore.getState().sampleDocs).toEqual([]);
+  });
+
+  it("clears selectedFieldPath to null", () => {
+    useJrdmStore.getState().resetEditor();
+    expect(useJrdmStore.getState().selectedFieldPath).toBeNull();
+  });
+
+  it("preserves project (no re-import needed)", () => {
+    useJrdmStore.getState().resetEditor();
+    const s = useJrdmStore.getState();
+    expect(s.project).not.toBeNull();
+    expect(s.project?.name).toBe("imported");
+  });
+
+  it("preserves relationships", () => {
+    useJrdmStore.getState().resetEditor();
+    expect(useJrdmStore.getState().relationships).toEqual(rels);
+  });
+
+  it("preserves connection", () => {
+    // Set a non-default connection before resetting editor
+    useJrdmStore.getState().setConnection({ user: "scott", connectString: "h:1521/FREEPDB1" });
+    useJrdmStore.getState().resetEditor();
+    const conn = useJrdmStore.getState().connection;
+    expect(conn.user).toBe("scott");
+    expect(conn.connectString).toBe("h:1521/FREEPDB1");
+  });
+
+  it("preserves schemas and selectedSchema", () => {
+    useJrdmStore.getState().resetEditor();
+    const s = useJrdmStore.getState();
+    expect(s.schemas).toEqual(["APP", "SALES"]);
+    expect(s.selectedSchema).toBe("APP");
+  });
+
+  it("preserves hiddenEntities", () => {
+    useJrdmStore.getState().resetEditor();
+    expect(useJrdmStore.getState().hiddenEntities).toContain("CUSTOMERS");
+  });
+
+  it("preserves layout slice (splitRatio/splitCollapsed/dockOpen/dockTab/inspectorOpen/inspectorPinned)", () => {
+    useJrdmStore.getState().resetEditor();
+    const s = useJrdmStore.getState();
+    expect(s.splitRatio).toBe(0.75);
+    expect(s.splitCollapsed).toBe("right");
+    expect(s.dockOpen).toBe(true);
+    expect(s.dockTab).toBe("issues");
+    expect(s.inspectorOpen).toBe(true);
+    expect(s.inspectorPinned).toBe(true);
+  });
+
+  it("reset() still clears EVERYTHING including project (unchanged behavior)", () => {
+    useJrdmStore.getState().reset();
+    const s = useJrdmStore.getState();
+    expect(s.project).toBeNull();
+    expect(s.relationships).toEqual([]);
+    expect(s.schemas).toEqual([]);
+    expect(s.selectedSchema).toBeNull();
+    expect(s.editingView).toBeNull();
+    expect(s.sampleDocs).toEqual([]);
+    expect(s.mapping).toEqual({ open: false, table: null });
+    expect(s.selectedFieldPath).toBeNull();
+    expect(s.hiddenEntities).toEqual([]);
+    expect(s.importToken).toBe(0);
+  });
+});

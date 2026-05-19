@@ -77,6 +77,7 @@ interface JrdmState {
   hideEntity: (name: string) => void;
   showEntity: (name: string) => void;
   showAllEntities: () => void;
+  resetEditor: () => void;
   reset: () => void;
 }
 
@@ -291,6 +292,19 @@ export const useJrdmStore = create<JrdmState>((set, get) => ({
   showEntity: (name) =>
     set((s) => ({ hiddenEntities: s.hiddenEntities.filter((n) => n !== name) })),
   showAllEntities: () => set({ hiddenEntities: [] }),
+  resetEditor: () =>
+    set({
+      // clear working-view state only — preserves project/relationships/connection/schemas/hiddenEntities/layout
+      editingView: null,
+      selectedFieldPath: null,
+      mapping: { ...MAPPING_DEFAULTS.mapping },
+      sampleDocs: [],
+      // clear in-flight authoring / preview ephemeral state
+      deployState: "idle",
+      deployMessage: null,
+      selectedDocId: null,
+      conflict: null,
+    }),
   reset: () =>
     set({
       connection: { ...EMPTY_CONNECTION },
